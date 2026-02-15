@@ -3,6 +3,7 @@ import { z } from 'zod';
 export type GetActivitiesDto = {
   start?: number;
   limit?: number;
+  activityType?: string;
 };
 
 export const getActivitiesSchema = z.object({
@@ -19,6 +20,10 @@ export const getActivitiesSchema = z.object({
     .default(20)
     .optional()
     .describe('Number of activities to return (1-100). Defaults to 20'),
+  activityType: z
+    .string()
+    .optional()
+    .describe('Filter by activity type (e.g. running, cycling, swimming)'),
 });
 
 export type GetActivitiesByDateDto = {

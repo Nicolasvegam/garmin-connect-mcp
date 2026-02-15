@@ -1,12 +1,18 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { GarminClient } from '../client';
-import { dateParamSchema, dateRangeParamSchema } from '../dtos';
+import {
+  dateParamSchema,
+  getRacePredictionsSchema,
+  getLactateThresholdSchema,
+  getScoreSchema,
+} from '../dtos';
 
 export function registerPerformanceTools(server: McpServer, client: GarminClient): void {
   server.registerTool(
     'get_vo2max',
     {
-      description: 'Get VO2 Max estimate for a date (running and cycling). Key cardiorespiratory fitness indicator',
+      description:
+        'Get VO2 Max estimate for a date (running and cycling). Data may not be available for today, use yesterday. For ranges use get_vo2max_range',
       inputSchema: dateParamSchema.shape,
     },
     async ({ date }) => {
@@ -21,7 +27,7 @@ export function registerPerformanceTools(server: McpServer, client: GarminClient
     'get_training_readiness',
     {
       description:
-        'Get Training Readiness score: combines sleep, recovery, training load and HRV to indicate readiness to train',
+        'Get Training Readiness score: combines sleep, recovery, training load and HRV. Data may not be available for today, use yesterday. For ranges use get_training_readiness_range',
       inputSchema: dateParamSchema.shape,
     },
     async ({ date }) => {
@@ -36,7 +42,7 @@ export function registerPerformanceTools(server: McpServer, client: GarminClient
     'get_training_status',
     {
       description:
-        'Get Training Status: productive, maintaining, detraining, peaking, recovery, overreaching. Includes training load',
+        'Get Training Status: productive, maintaining, detraining, peaking, recovery, overreaching. Includes training load. Data may not be available for today',
       inputSchema: dateParamSchema.shape,
     },
     async ({ date }) => {
@@ -51,7 +57,7 @@ export function registerPerformanceTools(server: McpServer, client: GarminClient
     'get_hrv',
     {
       description:
-        'Get Heart Rate Variability (HRV) data. Key indicator of autonomic nervous system health and recovery',
+        'Get Heart Rate Variability (HRV) data. Key recovery indicator. Data may not be available for today, use yesterday. For ranges use get_hrv_range',
       inputSchema: dateParamSchema.shape,
     },
     async ({ date }) => {
@@ -65,11 +71,12 @@ export function registerPerformanceTools(server: McpServer, client: GarminClient
   server.registerTool(
     'get_endurance_score',
     {
-      description: 'Get Endurance Score over a date range. Measures overall endurance fitness level',
-      inputSchema: dateRangeParamSchema.shape,
+      description:
+        'Get Endurance Score. Single date: omit endDate. Date range: provide both with optional aggregation (daily/weekly/monthly)',
+      inputSchema: getScoreSchema.shape,
     },
-    async ({ startDate, endDate }) => {
-      const data = await client.getEnduranceScore(startDate, endDate);
+    async ({ startDate, endDate, aggregation }) => {
+      const data = await client.getEnduranceScore(startDate, endDate, aggregation);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       };
@@ -79,11 +86,12 @@ export function registerPerformanceTools(server: McpServer, client: GarminClient
   server.registerTool(
     'get_hill_score',
     {
-      description: 'Get Hill Score over a date range. Measures climbing performance',
-      inputSchema: dateRangeParamSchema.shape,
+      description:
+        'Get Hill Score. Single date: omit endDate. Date range: provide both with optional aggregation (daily/weekly/monthly)',
+      inputSchema: getScoreSchema.shape,
     },
-    async ({ startDate, endDate }) => {
-      const data = await client.getHillScore(startDate, endDate);
+    async ({ startDate, endDate, aggregation }) => {
+      const data = await client.getHillScore(startDate, endDate, aggregation);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       };
@@ -93,10 +101,12 @@ export function registerPerformanceTools(server: McpServer, client: GarminClient
   server.registerTool(
     'get_race_predictions',
     {
-      description: 'Get race time predictions for 5K, 10K, half marathon, and marathon',
+      description:
+        'Get race time predictions for 5K, 10K, half marathon, and marathon. Omit dates for latest. Provide dates for historical (daily/monthly)',
+      inputSchema: getRacePredictionsSchema.shape,
     },
-    async () => {
-      const data = await client.getRacePredictions();
+    async ({ startDate, endDate, type }) => {
+      const data = await client.getRacePredictions(startDate, endDate, type ?? 'daily');
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       };
@@ -133,10 +143,12 @@ export function registerPerformanceTools(server: McpServer, client: GarminClient
   server.registerTool(
     'get_lactate_threshold',
     {
-      description: 'Get latest lactate threshold data: heart rate and pace at lactate threshold',
+      description:
+        'Get lactate threshold data: HR and pace. Omit dates for latest. Provide dates for historical trend with aggregation (daily/weekly/monthly)',
+      inputSchema: getLactateThresholdSchema.shape,
     },
-    async () => {
-      const data = await client.getLactateThreshold();
+    async ({ startDate, endDate, aggregation }) => {
+      const data = await client.getLactateThreshold(startDate, endDate, aggregation ?? 'daily');
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       };
