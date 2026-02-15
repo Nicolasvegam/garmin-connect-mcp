@@ -1,7 +1,7 @@
 {
   "name": "@nicolasvegam/garmin-connect-mcp",
   "version": "1.1.0",
-  "description": "MCP server for Garmin Connect - access fitness, health and training data",
+  "description": "MCP server for Garmin Connect with 90+ tools - read and write fitness, health, training and wellness data",
   "type": "module",
   "bin": {
     "garmin-connect-mcp": "./build/index.js"
