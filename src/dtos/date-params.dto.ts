@@ -32,7 +32,20 @@ export const weeklyParamSchema = z.object({
     .number()
     .min(1)
     .max(52)
-    .default(1)
+    .default(52)
     .optional()
-    .describe('Number of weeks to look back. Defaults to 1'),
+    .describe('Number of weeks to look back (1-52). Defaults to 52 (full year)'),
+});
+
+export type DateRangeOptionalEndDto = {
+  startDate: string;
+  endDate?: string;
+};
+
+export const dateRangeOptionalEndSchema = z.object({
+  startDate: z.string().describe('Start date in YYYY-MM-DD format'),
+  endDate: z
+    .string()
+    .optional()
+    .describe('End date in YYYY-MM-DD format. Defaults to startDate if not provided'),
 });
