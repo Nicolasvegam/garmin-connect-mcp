@@ -72,3 +72,38 @@ export const DEFAULT_ACTIVITIES_LIMIT = 20;
 export const DEFAULT_GOALS_LIMIT = 100;
 export const DEFAULT_WORKOUTS_LIMIT = 100;
 export const DEFAULT_ACTIVITIES_BY_DATE_LIMIT = 100;
+
+export const ACTIVITY_TYPED_SPLITS_SUBPATH = 'typedsplits';
+export const ACTIVITY_SPLIT_SUMMARIES_SUBPATH = 'split_summaries';
+export const ACTIVITY_POWER_ZONES_SUBPATH = 'powerTimeInZones';
+
+export const TRAINING_PLANS_ENDPOINT = '/trainingplan-service/trainingplan';
+export const ADAPTIVE_TRAINING_PLAN_ENDPOINT = '/trainingplan-service/trainingplan/adaptive';
+export const SCHEDULED_WORKOUT_ENDPOINT = '/workout-service/schedule';
+
+export const MENSTRUAL_CALENDAR_ENDPOINT = '/periodichealth-service/menstrualcycle/calendar';
+export const MENSTRUAL_DAYVIEW_ENDPOINT = '/periodichealth-service/menstrualcycle/dayview';
+export const PREGNANCY_SNAPSHOT_ENDPOINT = '/periodichealth-service/menstrualcycle/pregnancysnapshot';
+export const LIFESTYLE_LOGGING_ENDPOINT = '/lifestylelogging-service/dailyLog';
+
+export const AVAILABLE_BADGES_ENDPOINT = '/badge-service/badge/available';
+export const ADHOC_CHALLENGES_ENDPOINT = '/adhocchallenge-service/adHocChallenge/historical';
+export const BADGE_CHALLENGES_ENDPOINT = '/badgechallenge-service/badgeChallenge/completed';
+export const AVAILABLE_BADGE_CHALLENGES_ENDPOINT = '/badgechallenge-service/badgeChallenge/available';
+export const NON_COMPLETED_BADGE_CHALLENGES_ENDPOINT = '/badgechallenge-service/badgeChallenge/non-completed';
+export const INPROGRESS_VIRTUAL_CHALLENGES_ENDPOINT = '/badgechallenge-service/virtualChallenge/inProgress';
+
+export const GEAR_ACTIVITIES_ENDPOINT = '/activitylist-service/activities';
+export const GEAR_DEFAULTS_ENDPOINT = '/gear-service/gear/user';
+export const ACTIVITY_GEAR_ENDPOINT = '/gear-service/gear/filterGear';
+
+export const ADD_WEIGH_IN_ENDPOINT = '/weight-service/user-weight';
+export const SET_HYDRATION_ENDPOINT = '/usersummary-service/usersummary/hydration/log';
+export const SET_BLOOD_PRESSURE_ENDPOINT = '/bloodpressure-service/bloodpressure';
+export const GEAR_LINK_ENDPOINT = '/gear-service/gear/link';
+export const GEAR_UNLINK_ENDPOINT = '/gear-service/gear/unlink';
+export const UPLOAD_ENDPOINT = '/upload-service/upload';
+
+export const DAILY_STEPS_MAX_RANGE_DAYS = 28;
+export const BIOMETRIC_STATS_ENDPOINT = '/biometric-service/stats';
+export const DEFAULT_GEAR_ACTIVITIES_LIMIT = 20;

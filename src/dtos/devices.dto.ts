@@ -35,3 +35,26 @@ export type GetWorkoutDto = {
 export const getWorkoutSchema = z.object({
   workoutId: z.string().describe('The workout ID'),
 });
+
+export type GetGearActivitiesDto = {
+  gearUuid: string;
+  start?: number;
+  limit?: number;
+};
+
+export const getGearActivitiesSchema = z.object({
+  gearUuid: z.string().describe('The UUID of the gear item'),
+  start: z
+    .number()
+    .min(0)
+    .default(0)
+    .optional()
+    .describe('Pagination offset. Defaults to 0'),
+  limit: z
+    .number()
+    .min(1)
+    .max(100)
+    .default(20)
+    .optional()
+    .describe('Number of activities to return (1-100). Defaults to 20'),
+});

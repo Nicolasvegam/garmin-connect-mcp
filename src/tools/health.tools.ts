@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { GarminClient } from '../client';
-import { dateParamSchema, dateRangeParamSchema } from '../dtos';
+import { dateParamSchema, dateRangeOptionalEndSchema } from '../dtos';
 
 export function registerHealthTools(server: McpServer, client: GarminClient): void {
   server.registerTool(
@@ -79,7 +79,7 @@ export function registerHealthTools(server: McpServer, client: GarminClient): vo
     'get_stress',
     {
       description:
-        'Get daily stress levels: overall score, time in rest/low/medium/high stress, and time series',
+        'Get daily stress levels: overall score, time in rest/low/medium/high stress, and time series. Single date; for ranges use get_stress_range',
       inputSchema: dateParamSchema.shape,
     },
     async ({ date }) => {
@@ -94,11 +94,11 @@ export function registerHealthTools(server: McpServer, client: GarminClient): vo
     'get_body_battery',
     {
       description:
-        'Get Body Battery energy levels over a date range: charged, drained, highest, lowest',
-      inputSchema: dateRangeParamSchema.shape,
+        'Get Body Battery energy levels: charged, drained, highest, lowest. endDate defaults to startDate if omitted',
+      inputSchema: dateRangeOptionalEndSchema.shape,
     },
     async ({ startDate, endDate }) => {
-      const data = await client.getBodyBattery(startDate, endDate);
+      const data = await client.getBodyBattery(startDate, endDate ?? startDate);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       };
@@ -122,7 +122,7 @@ export function registerHealthTools(server: McpServer, client: GarminClient): vo
   server.registerTool(
     'get_respiration',
     {
-      description: 'Get daily respiration rate data throughout the day',
+      description: 'Get daily respiration rate data throughout the day. Single date; for ranges use get_respiration_range',
       inputSchema: dateParamSchema.shape,
     },
     async ({ date }) => {
@@ -136,7 +136,7 @@ export function registerHealthTools(server: McpServer, client: GarminClient): vo
   server.registerTool(
     'get_spo2',
     {
-      description: 'Get blood oxygen saturation (SpO2) data for a specific date',
+      description: 'Get blood oxygen saturation (SpO2) data for a specific date. Single date; for ranges use get_spo2_range',
       inputSchema: dateParamSchema.shape,
     },
     async ({ date }) => {

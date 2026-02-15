@@ -7,7 +7,7 @@ export function registerSleepTools(server: McpServer, client: GarminClient): voi
     'get_sleep_data',
     {
       description:
-        'Get detailed sleep data: duration, sleep stages (deep, light, REM, awake), sleep score, bed/wake times, and sleep movement',
+        'Get detailed sleep data for a single night: duration, sleep stages (deep, light, REM, awake), sleep score, bed/wake times. For multiple nights use get_sleep_data_range',
       inputSchema: dateParamSchema.shape,
     },
     async ({ date }) => {

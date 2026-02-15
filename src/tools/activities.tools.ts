@@ -16,8 +16,8 @@ export function registerActivityTools(server: McpServer, client: GarminClient): 
         'Get recent activities with pagination. Returns activity summaries: type, duration, distance, calories, heart rate',
       inputSchema: getActivitiesSchema.shape,
     },
-    async ({ start, limit }) => {
-      const data = await client.getActivities(start ?? 0, limit ?? DEFAULT_ACTIVITIES_LIMIT);
+    async ({ start, limit, activityType }) => {
+      const data = await client.getActivities(start ?? 0, limit ?? DEFAULT_ACTIVITIES_LIMIT, activityType);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       };
@@ -159,6 +159,62 @@ export function registerActivityTools(server: McpServer, client: GarminClient): 
     },
     async () => {
       const data = await client.getActivityTypes();
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'get_activity_gear',
+    {
+      description: 'Get gear/equipment used during a specific activity',
+      inputSchema: getActivitySchema.shape,
+    },
+    async ({ activityId }) => {
+      const data = await client.getActivityGear(activityId);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'get_activity_typed_splits',
+    {
+      description: 'Get typed split data for an activity (e.g. active vs rest intervals)',
+      inputSchema: getActivitySchema.shape,
+    },
+    async ({ activityId }) => {
+      const data = await client.getActivityTypedSplits(activityId);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'get_activity_split_summaries',
+    {
+      description: 'Get split summary data for an activity with aggregate stats per split',
+      inputSchema: getActivitySchema.shape,
+    },
+    async ({ activityId }) => {
+      const data = await client.getActivitySplitSummaries(activityId);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'get_activity_power_in_timezones',
+    {
+      description: 'Get power time in zones for cycling/running power activities',
+      inputSchema: getActivitySchema.shape,
+    },
+    async ({ activityId }) => {
+      const data = await client.getActivityPowerInTimezones(activityId);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       };

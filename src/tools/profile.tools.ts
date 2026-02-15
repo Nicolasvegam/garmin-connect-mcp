@@ -4,6 +4,7 @@ import {
   getDeviceSettingsSchema,
   getDeviceSolarSchema,
   getGearStatsSchema,
+  getGearActivitiesSchema,
   getWorkoutSchema,
 } from '../dtos';
 
@@ -176,6 +177,33 @@ export function registerProfileTools(server: McpServer, client: GarminClient): v
     },
     async ({ workoutId }) => {
       const data = await client.getWorkout(workoutId);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'get_gear_activities',
+    {
+      description: 'Get activities associated with a specific gear item (e.g. runs with a specific pair of shoes)',
+      inputSchema: getGearActivitiesSchema.shape,
+    },
+    async ({ gearUuid, start, limit }) => {
+      const data = await client.getGearActivities(gearUuid, start ?? 0, limit ?? 20);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'get_gear_defaults',
+    {
+      description: 'Get default gear assignments per activity type',
+    },
+    async () => {
+      const data = await client.getGearDefaults();
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       };

@@ -59,6 +59,12 @@ type UserProfile = {
   profileId: number;
 };
 
+export type RequestOptions = {
+  method?: string;
+  body?: unknown;
+  headers?: Record<string, string>;
+};
+
 export class GarminAuth {
   private email: string;
   private password: string;
@@ -82,17 +88,28 @@ export class GarminAuth {
     this.loadTokens();
   }
 
-  async request<T>(endpoint: string): Promise<T> {
+  async request<T>(endpoint: string, options?: RequestOptions): Promise<T> {
     await this.ensureAuthenticated();
 
     const url = endpoint.startsWith('http') ? endpoint : `${GARMIN_CONNECT_API}${endpoint}`;
+    const method = (options?.method ?? 'GET').toUpperCase();
+    const reqHeaders: Record<string, string> = {
+      Authorization: `Bearer ${this.oauth2Token!.access_token}`,
+      'User-Agent': USER_AGENT_MOBILE,
+      ...options?.headers,
+    };
+
+    if (options?.body && !reqHeaders['Content-Type']) {
+      reqHeaders['Content-Type'] = 'application/json';
+    }
+
     for (let attempt = 0; attempt <= MAX_REQUEST_RETRIES; attempt++) {
       try {
-        const response = await axios.get<T>(url, {
-          headers: {
-            Authorization: `Bearer ${this.oauth2Token!.access_token}`,
-            'User-Agent': USER_AGENT_MOBILE,
-          },
+        const response = await axios<T>({
+          url,
+          method,
+          headers: reqHeaders,
+          data: options?.body,
         });
         return response.data;
       } catch (error: unknown) {
@@ -102,6 +119,7 @@ export class GarminAuth {
 
         if (status === 401 && attempt === 0) {
           await this.refreshOrRelogin();
+          reqHeaders.Authorization = `Bearer ${this.oauth2Token!.access_token}`;
           continue;
         }
 
