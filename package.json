@@ -1,0 +1,44 @@
+{
+  "name": "@nicolasvegam/garmin-connect-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Garmin Connect - access fitness, health and training data",
+  "type": "module",
+  "bin": {
+    "garmin-connect-mcp": "./build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "start": "node build/index.js",
+    "prepublishOnly": "tsup"
+  },
+  "keywords": [
+    "garmin",
+    "garmin-connect",
+    "mcp",
+    "model-context-protocol",
+    "fitness",
+    "health",
+    "claude"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "axios": "^1.7.9",
+    "axios-cookiejar-support": "^5.0.5",
+    "oauth-1.0a": "^2.2.6",
+    "tough-cookie": "^5.1.2",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "@types/tough-cookie": "^4.0.5",
+    "dotenv": "^17.3.1",
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.3",
+    "vitest": "^4.0.18"
+  }
+}
