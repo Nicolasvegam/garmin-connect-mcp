@@ -24,7 +24,7 @@ if (!GARMIN_EMAIL || !GARMIN_PASSWORD) {
   console.error(
     'Error: GARMIN_EMAIL and GARMIN_PASSWORD environment variables are required.\n' +
       'Set them when adding this MCP server:\n' +
-      '  claude mcp add garmin -e GARMIN_EMAIL=you@email.com -e GARMIN_PASSWORD=yourpass -- npx -y garmin-connect-mcp',
+      '  claude mcp add garmin -e GARMIN_EMAIL=you@email.com -e GARMIN_PASSWORD=yourpass -- npx -y @nicolasvegam/garmin-connect-mcp',
   );
   process.exit(1);
 }

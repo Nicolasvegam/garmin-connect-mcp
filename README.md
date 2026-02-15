@@ -16,7 +16,7 @@ API endpoints and authentication flow based on [`python-garminconnect`](https://
 ### Claude Code
 
 ```bash
-claude mcp add garmin -e GARMIN_EMAIL=you@email.com -e GARMIN_PASSWORD=yourpass -- npx -y garmin-connect-mcp
+claude mcp add garmin -e GARMIN_EMAIL=you@email.com -e GARMIN_PASSWORD=yourpass -- npx -y @nicolasvegam/garmin-connect-mcp
 ```
 
 ### Claude Desktop
@@ -28,7 +28,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
   "mcpServers": {
     "garmin": {
       "command": "npx",
-      "args": ["-y", "garmin-connect-mcp"],
+      "args": ["-y", "@nicolasvegam/garmin-connect-mcp"],
       "env": {
         "GARMIN_EMAIL": "you@email.com",
         "GARMIN_PASSWORD": "yourpass"
@@ -47,7 +47,7 @@ Add to `.cursor/mcp.json` in your project root:
   "mcpServers": {
     "garmin": {
       "command": "npx",
-      "args": ["-y", "garmin-connect-mcp"],
+      "args": ["-y", "@nicolasvegam/garmin-connect-mcp"],
       "env": {
         "GARMIN_EMAIL": "you@email.com",
         "GARMIN_PASSWORD": "yourpass"
@@ -66,7 +66,7 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
   "mcpServers": {
     "garmin": {
       "command": "npx",
-      "args": ["-y", "garmin-connect-mcp"],
+      "args": ["-y", "@nicolasvegam/garmin-connect-mcp"],
       "env": {
         "GARMIN_EMAIL": "you@email.com",
         "GARMIN_PASSWORD": "yourpass"
@@ -81,7 +81,7 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
 Run the server with environment variables:
 
 ```bash
-GARMIN_EMAIL=you@email.com GARMIN_PASSWORD=yourpass npx -y garmin-connect-mcp
+GARMIN_EMAIL=you@email.com GARMIN_PASSWORD=yourpass npx -y @nicolasvegam/garmin-connect-mcp
 ```
 
 The server communicates over stdio using the [Model Context Protocol](https://modelcontextprotocol.io/).
@@ -184,7 +184,7 @@ Uses Garmin Connect credentials (email/password) via environment variables. OAut
 ## Development
 
 ```bash
-git clone https://github.com/nicovegasr/garmin-connect-mcp.git
+git clone https://github.com/Nicolasvegam/garmin-connect-mcp.git
 cd garmin-connect-mcp
 npm install
 npm run build
