@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD format');
+
 export type GetDeviceSettingsDto = {
   deviceId: string;
 };
@@ -16,8 +18,8 @@ export type GetDeviceSolarDto = {
 
 export const getDeviceSolarSchema = z.object({
   deviceId: z.string().describe('The Garmin device ID'),
-  startDate: z.string().describe('Start date in YYYY-MM-DD format'),
-  endDate: z.string().describe('End date in YYYY-MM-DD format'),
+  startDate: dateString.describe('Start date in YYYY-MM-DD format'),
+  endDate: dateString.describe('End date in YYYY-MM-DD format'),
 });
 
 export type GetGearStatsDto = {
@@ -25,7 +27,7 @@ export type GetGearStatsDto = {
 };
 
 export const getGearStatsSchema = z.object({
-  gearUuid: z.string().describe('The UUID of the gear item'),
+  gearUuid: z.string().uuid().describe('The UUID of the gear item'),
 });
 
 export type GetWorkoutDto = {
@@ -43,7 +45,7 @@ export type GetGearActivitiesDto = {
 };
 
 export const getGearActivitiesSchema = z.object({
-  gearUuid: z.string().describe('The UUID of the gear item'),
+  gearUuid: z.string().uuid().describe('The UUID of the gear item'),
   start: z
     .number()
     .min(0)
