@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD format');
+
 export type SetActivityNameDto = {
   activityId: number;
   name: string;
@@ -43,13 +45,13 @@ export type AddWeighInDto = {
 };
 
 export const addWeighInSchema = z.object({
-  weight: z.number().positive().describe('Weight value'),
+  weight: z.number().positive().max(700).describe('Weight value'),
   unitKey: z
     .enum(['kg', 'lbs'])
     .default('kg')
     .optional()
     .describe('Weight unit: kg or lbs. Defaults to kg'),
-  date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today'),
+  date: dateString.optional().describe('Date in YYYY-MM-DD format. Defaults to today'),
 });
 
 export type SetHydrationDto = {
@@ -58,8 +60,8 @@ export type SetHydrationDto = {
 };
 
 export const setHydrationSchema = z.object({
-  date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today'),
-  valueMl: z.number().min(0).describe('Hydration value in milliliters'),
+  date: dateString.optional().describe('Date in YYYY-MM-DD format. Defaults to today'),
+  valueMl: z.number().min(0).max(20000).describe('Hydration value in milliliters'),
 });
 
 export type SetBloodPressureDto = {
@@ -71,9 +73,9 @@ export type SetBloodPressureDto = {
 };
 
 export const setBloodPressureSchema = z.object({
-  systolic: z.number().positive().describe('Systolic pressure (mmHg)'),
-  diastolic: z.number().positive().describe('Diastolic pressure (mmHg)'),
-  pulse: z.number().positive().describe('Pulse rate (bpm)'),
+  systolic: z.number().positive().max(300).describe('Systolic pressure (mmHg)'),
+  diastolic: z.number().positive().max(200).describe('Diastolic pressure (mmHg)'),
+  pulse: z.number().positive().max(300).describe('Pulse rate (bpm)'),
   timestamp: z
     .string()
     .optional()
@@ -87,6 +89,6 @@ export type GearActivityDto = {
 };
 
 export const gearActivitySchema = z.object({
-  gearUuid: z.string().describe('The UUID of the gear item'),
+  gearUuid: z.string().uuid().describe('The UUID of the gear item'),
   activityId: z.number().positive().describe('The Garmin activity ID'),
 });

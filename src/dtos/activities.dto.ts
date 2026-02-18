@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD format');
+
 export type GetActivitiesDto = {
   start?: number;
   limit?: number;
@@ -33,8 +35,8 @@ export type GetActivitiesByDateDto = {
 };
 
 export const getActivitiesByDateSchema = z.object({
-  startDate: z.string().describe('Start date in YYYY-MM-DD format'),
-  endDate: z.string().describe('End date in YYYY-MM-DD format'),
+  startDate: dateString.describe('Start date in YYYY-MM-DD format'),
+  endDate: dateString.describe('End date in YYYY-MM-DD format'),
   activityType: z
     .string()
     .optional()
@@ -56,8 +58,8 @@ export type GetProgressSummaryDto = {
 };
 
 export const getProgressSummarySchema = z.object({
-  startDate: z.string().describe('Start date in YYYY-MM-DD format'),
-  endDate: z.string().describe('End date in YYYY-MM-DD format'),
+  startDate: dateString.describe('Start date in YYYY-MM-DD format'),
+  endDate: dateString.describe('End date in YYYY-MM-DD format'),
   metric: z
     .string()
     .default('distance')

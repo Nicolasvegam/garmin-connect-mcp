@@ -102,8 +102,8 @@ function todayString(): string {
 export class GarminClient {
   private auth: GarminAuth;
 
-  constructor(email: string, password: string) {
-    this.auth = new GarminAuth(email, password);
+  constructor(email: string, password: string, promptMfa?: () => Promise<string>) {
+    this.auth = new GarminAuth(email, password, promptMfa);
   }
 
   private request<T>(endpoint: string, options?: RequestOptions): Promise<T> {
@@ -119,6 +119,10 @@ export class GarminClient {
   }
 
   private chunkDateRange(startDate: string, endDate: string, maxDays: number): { start: string; end: string }[] {
+    if (new Date(startDate) > new Date(endDate)) {
+      throw new Error(`startDate ${startDate} must not be after endDate ${endDate}`);
+    }
+
     const chunks: { start: string; end: string }[] = [];
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -141,6 +145,10 @@ export class GarminClient {
   }
 
   dateRange(startDate: string, endDate: string): string[] {
+    if (new Date(startDate) > new Date(endDate)) {
+      throw new Error(`startDate ${startDate} must not be after endDate ${endDate}`);
+    }
+
     const dates: string[] = [];
     const current = new Date(startDate);
     const end = new Date(endDate);
@@ -149,6 +157,20 @@ export class GarminClient {
       current.setDate(current.getDate() + 1);
     }
     return dates;
+  }
+
+  private async fetchRange(
+    startDate: string,
+    endDate: string,
+    fetcher: (date: string) => Promise<unknown>,
+  ): Promise<{ date: string; data: unknown }[]> {
+    const dates = this.dateRange(startDate, endDate);
+    const results: { date: string; data: unknown }[] = [];
+    for (const date of dates) {
+      const data = await fetcher(date).catch(() => null);
+      results.push({ date, data });
+    }
+    return results;
   }
 
   async getActivities(start = 0, limit = DEFAULT_ACTIVITIES_LIMIT, activityType?: string): Promise<unknown> {
@@ -233,11 +255,6 @@ export class GarminClient {
   }
 
   async getDailySummary(date?: string): Promise<unknown> {
-    const resolvedDate = date ?? todayString();
-    return this.request(`${USER_SUMMARY_ENDPOINT}/${this.displayName}?calendarDate=${resolvedDate}`);
-  }
-
-  async getSteps(date?: string): Promise<unknown> {
     const resolvedDate = date ?? todayString();
     return this.request(`${USER_SUMMARY_ENDPOINT}/${this.displayName}?calendarDate=${resolvedDate}`);
   }
@@ -348,11 +365,6 @@ export class GarminClient {
 
   async getBodyComposition(startDate: string, endDate: string): Promise<unknown> {
     return this.request(`${BODY_COMPOSITION_ENDPOINT}?startDate=${startDate}&endDate=${endDate}`);
-  }
-
-  async getLatestWeight(): Promise<unknown> {
-    const resolvedDate = todayString();
-    return this.request(`${WEIGHT_DAY_VIEW_ENDPOINT}/${resolvedDate}?includeAll=true`);
   }
 
   async getDailyWeighIns(date?: string): Promise<unknown> {
@@ -591,74 +603,32 @@ export class GarminClient {
     return this.request(`${GEAR_DEFAULTS_ENDPOINT}/${this.userProfilePk}/activityTypes`);
   }
 
-  async getSleepDataRange(startDate: string, endDate: string): Promise<unknown[]> {
-    const dates = this.dateRange(startDate, endDate);
-    const results: { date: string; data: unknown }[] = [];
-    for (const date of dates) {
-      const data = await this.getSleepData(date).catch(() => null);
-      results.push({ date, data });
-    }
-    return results;
+  async getSleepDataRange(startDate: string, endDate: string): Promise<{ date: string; data: unknown }[]> {
+    return this.fetchRange(startDate, endDate, (d) => this.getSleepData(d));
   }
 
-  async getHRVRange(startDate: string, endDate: string): Promise<unknown[]> {
-    const dates = this.dateRange(startDate, endDate);
-    const results: { date: string; data: unknown }[] = [];
-    for (const date of dates) {
-      const data = await this.getHRV(date).catch(() => null);
-      results.push({ date, data });
-    }
-    return results;
+  async getHRVRange(startDate: string, endDate: string): Promise<{ date: string; data: unknown }[]> {
+    return this.fetchRange(startDate, endDate, (d) => this.getHRV(d));
   }
 
-  async getStressRange(startDate: string, endDate: string): Promise<unknown[]> {
-    const dates = this.dateRange(startDate, endDate);
-    const results: { date: string; data: unknown }[] = [];
-    for (const date of dates) {
-      const data = await this.getStress(date).catch(() => null);
-      results.push({ date, data });
-    }
-    return results;
+  async getStressRange(startDate: string, endDate: string): Promise<{ date: string; data: unknown }[]> {
+    return this.fetchRange(startDate, endDate, (d) => this.getStress(d));
   }
 
-  async getSpO2Range(startDate: string, endDate: string): Promise<unknown[]> {
-    const dates = this.dateRange(startDate, endDate);
-    const results: { date: string; data: unknown }[] = [];
-    for (const date of dates) {
-      const data = await this.getSpO2(date).catch(() => null);
-      results.push({ date, data });
-    }
-    return results;
+  async getSpO2Range(startDate: string, endDate: string): Promise<{ date: string; data: unknown }[]> {
+    return this.fetchRange(startDate, endDate, (d) => this.getSpO2(d));
   }
 
-  async getRespirationRange(startDate: string, endDate: string): Promise<unknown[]> {
-    const dates = this.dateRange(startDate, endDate);
-    const results: { date: string; data: unknown }[] = [];
-    for (const date of dates) {
-      const data = await this.getRespiration(date).catch(() => null);
-      results.push({ date, data });
-    }
-    return results;
+  async getRespirationRange(startDate: string, endDate: string): Promise<{ date: string; data: unknown }[]> {
+    return this.fetchRange(startDate, endDate, (d) => this.getRespiration(d));
   }
 
-  async getTrainingReadinessRange(startDate: string, endDate: string): Promise<unknown[]> {
-    const dates = this.dateRange(startDate, endDate);
-    const results: { date: string; data: unknown }[] = [];
-    for (const date of dates) {
-      const data = await this.getTrainingReadiness(date).catch(() => null);
-      results.push({ date, data });
-    }
-    return results;
+  async getTrainingReadinessRange(startDate: string, endDate: string): Promise<{ date: string; data: unknown }[]> {
+    return this.fetchRange(startDate, endDate, (d) => this.getTrainingReadiness(d));
   }
 
-  async getVO2MaxRange(startDate: string, endDate: string): Promise<unknown[]> {
-    const dates = this.dateRange(startDate, endDate);
-    const results: { date: string; data: unknown }[] = [];
-    for (const date of dates) {
-      const data = await this.getVO2Max(date).catch(() => null);
-      results.push({ date, data });
-    }
-    return results;
+  async getVO2MaxRange(startDate: string, endDate: string): Promise<{ date: string; data: unknown }[]> {
+    return this.fetchRange(startDate, endDate, (d) => this.getVO2Max(d));
   }
 
   async getDailyHealthSnapshot(date?: string): Promise<Record<string, unknown>> {
