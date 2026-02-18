@@ -173,7 +173,8 @@ export class GarminAuth {
         this.saveTokens();
         this.isAuthenticated = true;
         return;
-      } catch {
+      } catch (error) {
+        console.error('OAuth2 refresh failed, will re-login:', error);
       }
     }
 
@@ -381,25 +382,28 @@ export class GarminAuth {
 
   private saveTokens(): void {
     if (!fs.existsSync(TOKEN_DIR)) {
-      fs.mkdirSync(TOKEN_DIR, { recursive: true });
+      fs.mkdirSync(TOKEN_DIR, { recursive: true, mode: 0o700 });
     }
 
     if (this.oauth1Token) {
       fs.writeFileSync(
         path.join(TOKEN_DIR, OAUTH1_TOKEN_FILE),
         JSON.stringify(this.oauth1Token, null, 2),
+        { mode: 0o600 },
       );
     }
     if (this.oauth2Token) {
       fs.writeFileSync(
         path.join(TOKEN_DIR, OAUTH2_TOKEN_FILE),
         JSON.stringify(this.oauth2Token, null, 2),
+        { mode: 0o600 },
       );
     }
     if (this.profile) {
       fs.writeFileSync(
         path.join(TOKEN_DIR, PROFILE_FILE),
         JSON.stringify(this.profile, null, 2),
+        { mode: 0o600 },
       );
     }
   }
