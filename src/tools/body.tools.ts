@@ -24,7 +24,7 @@ export function registerBodyTools(server: McpServer, client: GarminClient): void
       description: 'Get the most recent weight entry',
     },
     async () => {
-      const data = await client.getLatestWeight();
+      const data = await client.getDailyWeighIns();
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       };

@@ -25,7 +25,7 @@ export function registerHealthTools(server: McpServer, client: GarminClient): vo
       inputSchema: dateParamSchema.shape,
     },
     async ({ date }) => {
-      const data = await client.getSteps(date);
+      const data = await client.getDailySummary(date);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       };
