@@ -181,6 +181,21 @@ The server communicates over stdio using the [Model Context Protocol](https://mo
 
 Uses Garmin Connect credentials (email/password) via environment variables. OAuth tokens are cached in `~/.garmin-mcp/` to avoid re-authentication on each request.
 
+### MFA (Multi-Factor Authentication)
+
+If your Garmin account has MFA enabled (required for devices with ECG capabilities), you need to run the interactive setup once before using the MCP server:
+
+```bash
+GARMIN_EMAIL='you@email.com' GARMIN_PASSWORD='yourpass' npx -y @nicolasvegam/garmin-connect-mcp setup
+```
+
+This will:
+1. Log in to Garmin Connect
+2. Prompt you for the MFA code sent to your email or authenticator app
+3. Save OAuth tokens to `~/.garmin-mcp/`
+
+After setup, the MCP server will use the saved tokens automatically — no MFA prompt needed until the tokens expire. When they do, simply run the setup command again.
+
 ## Development
 
 ```bash

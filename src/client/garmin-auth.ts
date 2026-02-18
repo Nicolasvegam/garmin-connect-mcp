@@ -25,6 +25,8 @@ const USER_AGENT_BROWSER = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKi
 
 const CSRF_REGEX = /name="_csrf"\s+value="(.+?)"/;
 const TICKET_REGEX = /ticket=([^"]+)"/;
+const TITLE_REGEX = /<title>(.+?)<\/title>/;
+const SSO_VERIFY_MFA = 'https://sso.garmin.com/sso/verifyMFA/loginEnterMfaCode';
 
 const TOKEN_DIR = path.join(os.homedir(), '.garmin-mcp');
 const OAUTH1_TOKEN_FILE = 'oauth1_token.json';
@@ -73,6 +75,7 @@ export class GarminAuth {
   private oauth2Token: OAuth2Token | null = null;
   private profile: UserProfile | null = null;
   private isAuthenticated = false;
+  private promptMfa?: () => Promise<string>;
 
   get displayName(): string {
     return this.profile?.displayName ?? '';
@@ -82,9 +85,10 @@ export class GarminAuth {
     return this.profile?.profileId ?? 0;
   }
 
-  constructor(email: string, password: string) {
+  constructor(email: string, password: string, promptMfa?: () => Promise<string>) {
     this.email = email;
     this.password = password;
+    this.promptMfa = promptMfa;
     this.loadTokens();
   }
 
@@ -173,7 +177,8 @@ export class GarminAuth {
         this.saveTokens();
         this.isAuthenticated = true;
         return;
-      } catch {
+      } catch (error) {
+        console.error('OAuth2 refresh failed, will re-login:', error);
       }
     }
 
@@ -265,8 +270,51 @@ export class GarminAuth {
       },
     });
 
-    const ticketMatch = TICKET_REGEX.exec(loginResponse.data);
-    if (!ticketMatch) throw new Error('Login failed: invalid credentials or MFA required');
+    let responseHtml: string = loginResponse.data;
+
+    const titleMatch = TITLE_REGEX.exec(responseHtml);
+    const title = titleMatch?.[1] ?? '';
+
+    if (title.includes('MFA')) {
+      if (!this.promptMfa) {
+        throw new Error(
+          'MFA is required but no MFA handler is available. Run "npx @nicolasvegam/garmin-connect-mcp setup" to authenticate interactively.',
+        );
+      }
+
+      const mfaCsrfMatch = CSRF_REGEX.exec(responseHtml);
+      if (!mfaCsrfMatch) throw new Error('Failed to extract CSRF token for MFA');
+
+      const mfaCode = await this.promptMfa();
+
+      const mfaResponse = await ssoClient.post(SSO_VERIFY_MFA, new URLSearchParams({
+        'mfa-code': mfaCode,
+        embed: 'true',
+        _csrf: mfaCsrfMatch[1]!,
+        fromPage: 'setupEnterMfaCode',
+      }).toString(), {
+        params: {
+          ...signinParams,
+          clientId: SSO_CLIENT_ID,
+          service: SSO_EMBED,
+          source: SSO_EMBED,
+          redirectAfterAccountLoginUrl: SSO_EMBED,
+          redirectAfterAccountCreationUrl: SSO_EMBED,
+        },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': USER_AGENT_BROWSER,
+          Origin: SSO_ORIGIN,
+          Referer: SSO_SIGNIN,
+          Dnt: '1',
+        },
+      });
+
+      responseHtml = mfaResponse.data;
+    }
+
+    const ticketMatch = TICKET_REGEX.exec(responseHtml);
+    if (!ticketMatch) throw new Error('Login failed: invalid credentials or MFA verification failed');
 
     return ticketMatch[1]!;
   }
@@ -381,25 +429,28 @@ export class GarminAuth {
 
   private saveTokens(): void {
     if (!fs.existsSync(TOKEN_DIR)) {
-      fs.mkdirSync(TOKEN_DIR, { recursive: true });
+      fs.mkdirSync(TOKEN_DIR, { recursive: true, mode: 0o700 });
     }
 
     if (this.oauth1Token) {
       fs.writeFileSync(
         path.join(TOKEN_DIR, OAUTH1_TOKEN_FILE),
         JSON.stringify(this.oauth1Token, null, 2),
+        { mode: 0o600 },
       );
     }
     if (this.oauth2Token) {
       fs.writeFileSync(
         path.join(TOKEN_DIR, OAUTH2_TOKEN_FILE),
         JSON.stringify(this.oauth2Token, null, 2),
+        { mode: 0o600 },
       );
     }
     if (this.profile) {
       fs.writeFileSync(
         path.join(TOKEN_DIR, PROFILE_FILE),
         JSON.stringify(this.profile, null, 2),
+        { mode: 0o600 },
       );
     }
   }

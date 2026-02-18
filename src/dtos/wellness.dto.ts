@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { dateString } from '../constants';
 
 export type GetMenstrualCalendarDto = {
   startDate: string;
@@ -6,6 +7,6 @@ export type GetMenstrualCalendarDto = {
 };
 
 export const getMenstrualCalendarSchema = z.object({
-  startDate: z.string().describe('Start date in YYYY-MM-DD format'),
-  endDate: z.string().describe('End date in YYYY-MM-DD format'),
+  startDate: dateString.describe('Start date in YYYY-MM-DD format'),
+  endDate: dateString.describe('End date in YYYY-MM-DD format'),
 });

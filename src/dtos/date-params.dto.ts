@@ -1,12 +1,12 @@
 import { z } from 'zod';
+import { dateString } from '../constants';
 
 export type DateParamDto = {
   date?: string;
 };
 
 export const dateParamSchema = z.object({
-  date: z
-    .string()
+  date: dateString
     .optional()
     .describe('Date in YYYY-MM-DD format. Defaults to today if not provided'),
 });
@@ -17,8 +17,8 @@ export type DateRangeParamDto = {
 };
 
 export const dateRangeParamSchema = z.object({
-  startDate: z.string().describe('Start date in YYYY-MM-DD format'),
-  endDate: z.string().describe('End date in YYYY-MM-DD format'),
+  startDate: dateString.describe('Start date in YYYY-MM-DD format'),
+  endDate: dateString.describe('End date in YYYY-MM-DD format'),
 });
 
 export type WeeklyParamDto = {
@@ -27,7 +27,7 @@ export type WeeklyParamDto = {
 };
 
 export const weeklyParamSchema = z.object({
-  endDate: z.string().describe('End date in YYYY-MM-DD format'),
+  endDate: dateString.describe('End date in YYYY-MM-DD format'),
   weeks: z
     .number()
     .min(1)
@@ -43,9 +43,8 @@ export type DateRangeOptionalEndDto = {
 };
 
 export const dateRangeOptionalEndSchema = z.object({
-  startDate: z.string().describe('Start date in YYYY-MM-DD format'),
-  endDate: z
-    .string()
+  startDate: dateString.describe('Start date in YYYY-MM-DD format'),
+  endDate: dateString
     .optional()
     .describe('End date in YYYY-MM-DD format. Defaults to startDate if not provided'),
 });

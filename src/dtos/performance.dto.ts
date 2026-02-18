@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { dateString } from '../constants';
 
 export type GetRacePredictionsDto = {
   startDate?: string;
@@ -7,12 +8,10 @@ export type GetRacePredictionsDto = {
 };
 
 export const getRacePredictionsSchema = z.object({
-  startDate: z
-    .string()
+  startDate: dateString
     .optional()
     .describe('Start date in YYYY-MM-DD format. Omit for latest prediction only'),
-  endDate: z
-    .string()
+  endDate: dateString
     .optional()
     .describe('End date in YYYY-MM-DD format. Required if startDate is provided'),
   type: z
@@ -29,12 +28,10 @@ export type GetLactateThresholdDto = {
 };
 
 export const getLactateThresholdSchema = z.object({
-  startDate: z
-    .string()
+  startDate: dateString
     .optional()
     .describe('Start date in YYYY-MM-DD format. Omit for latest value only'),
-  endDate: z
-    .string()
+  endDate: dateString
     .optional()
     .describe('End date in YYYY-MM-DD format. Required if startDate is provided'),
   aggregation: z
@@ -51,11 +48,9 @@ export type GetScoreDto = {
 };
 
 export const getScoreSchema = z.object({
-  startDate: z
-    .string()
+  startDate: dateString
     .describe('Start date in YYYY-MM-DD format. If endDate is omitted, treated as single day'),
-  endDate: z
-    .string()
+  endDate: dateString
     .optional()
     .describe('End date in YYYY-MM-DD format. Omit for single-day view'),
   aggregation: z
