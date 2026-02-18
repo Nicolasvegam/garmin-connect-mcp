@@ -1,6 +1,5 @@
 import { z } from 'zod';
-
-const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD format');
+import { dateString } from '../constants';
 
 export type GetDeviceSettingsDto = {
   deviceId: string;
