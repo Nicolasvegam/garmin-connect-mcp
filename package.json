@@ -12,8 +12,11 @@
   ],
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch",
+    "build:next": "next build",
+    "dev": "next dev",
+    "dev:stdio": "tsup --watch",
     "start": "node build/index.js",
+    "start:next": "next start",
     "setup": "node build/setup.js",
     "prepublishOnly": "tsup"
   },
@@ -31,12 +34,15 @@
     "@modelcontextprotocol/sdk": "^1.12.1",
     "axios": "^1.7.9",
     "axios-cookiejar-support": "^5.0.5",
+    "mcp-handler": "^1.1.0",
+    "next": "^15.3.0",
     "oauth-1.0a": "^2.2.6",
     "tough-cookie": "^5.1.2",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/node": "^22.13.4",
+    "@types/react": "19.2.14",
     "@types/tough-cookie": "^4.0.5",
     "dotenv": "^17.3.1",
     "tsup": "^8.5.1",
