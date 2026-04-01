@@ -28,7 +28,10 @@ const TICKET_REGEX = /ticket=([^"]+)"/;
 const TITLE_REGEX = /<title>(.+?)<\/title>/;
 const SSO_VERIFY_MFA = 'https://sso.garmin.com/sso/verifyMFA/loginEnterMfaCode';
 
-const TOKEN_DIR = path.join(os.homedir(), '.garmin-mcp');
+const TOKEN_DIR =
+  process.env.VERCEL === '1'
+    ? '/tmp/garmin-mcp'
+    : path.join(os.homedir(), '.garmin-mcp');
 const OAUTH1_TOKEN_FILE = 'oauth1_token.json';
 const OAUTH2_TOKEN_FILE = 'oauth2_token.json';
 const PROFILE_FILE = 'profile.json';
