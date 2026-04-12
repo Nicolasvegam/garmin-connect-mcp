@@ -15,7 +15,9 @@
     "dev": "tsup --watch",
     "start": "node build/index.js",
     "setup": "node build/setup.js",
-    "prepublishOnly": "tsup"
+    "prepublishOnly": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "garmin",
@@ -27,6 +29,9 @@
     "claude"
   ],
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "axios": "^1.7.9",

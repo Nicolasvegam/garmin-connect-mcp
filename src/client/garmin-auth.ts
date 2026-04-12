@@ -34,6 +34,8 @@ const OAUTH2_TOKEN_FILE = 'oauth2_token.json';
 const PROFILE_FILE = 'profile.json';
 
 const MAX_REQUEST_RETRIES = 3;
+const MAX_AUTH_RETRIES = 2;
+const REQUEST_TIMEOUT_MS = 30_000;
 const TOKEN_EXPIRY_BUFFER_SECONDS = 60;
 
 type OAuth1Token = {
@@ -114,6 +116,7 @@ export class GarminAuth {
           method,
           headers: reqHeaders,
           data: options?.body,
+          timeout: REQUEST_TIMEOUT_MS,
         });
         return response.data;
       } catch (error: unknown) {
@@ -167,8 +170,16 @@ export class GarminAuth {
     this.isAuthenticated = true;
   }
 
+  private authAttempts = 0;
+
   private async refreshOrRelogin(): Promise<void> {
     this.isAuthenticated = false;
+
+    if (this.authAttempts >= MAX_AUTH_RETRIES) {
+      this.authAttempts = 0;
+      throw new Error('Authentication failed after maximum retries');
+    }
+    this.authAttempts++;
 
     if (this.oauth1Token) {
       try {
@@ -176,6 +187,7 @@ export class GarminAuth {
         if (!this.profile) await this.fetchProfile();
         this.saveTokens();
         this.isAuthenticated = true;
+        this.authAttempts = 0;
         return;
       } catch (error) {
         console.error('OAuth2 refresh failed, will re-login:', error);
@@ -184,6 +196,7 @@ export class GarminAuth {
 
     await this.login();
     this.isAuthenticated = true;
+    this.authAttempts = 0;
   }
 
   private async login(): Promise<void> {

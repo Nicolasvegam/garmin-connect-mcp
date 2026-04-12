@@ -21,11 +21,11 @@ export function registerHealthTools(server: McpServer, client: GarminClient): vo
   server.registerTool(
     'get_steps',
     {
-      description: 'Get step count for a specific date',
+      description: 'Get step count for a specific date (daily total and intraday chart)',
       inputSchema: dateParamSchema.shape,
     },
     async ({ date }) => {
-      const data = await client.getDailySummary(date);
+      const data = await client.getStepsChart(date);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       };
