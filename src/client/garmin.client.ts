@@ -93,6 +93,8 @@ import {
   GEAR_UNLINK_ENDPOINT,
   DAILY_STEPS_MAX_RANGE_DAYS,
   BIOMETRIC_STATS_ENDPOINT,
+  COURSE_ENDPOINT,
+  DEFAULT_COURSES_LIMIT,
 } from '../constants/garmin-endpoints';
 
 function todayString(): string {
@@ -749,5 +751,42 @@ export class GarminClient {
       `${GEAR_UNLINK_ENDPOINT}/${gearUuid}/activity/${activityId}`,
       { method: 'PUT' },
     );
+  }
+
+  async getCourses(start = 0, limit = DEFAULT_COURSES_LIMIT): Promise<unknown> {
+    return this.request(`${COURSE_ENDPOINT}?start=${start}&limit=${limit}`);
+  }
+
+  async createCourse(dto: import('../dtos').CreateCourseDto): Promise<unknown> {
+    const ACTIVITY_TYPE_IDS: Record<string, number> = {
+      running: 1,
+      cycling: 2,
+      hiking: 3,
+      swimming: 5,
+    };
+    const privacyRuleId = dto.privacy === 'public' ? 1 : 2;
+    const activityTypePk = ACTIVITY_TYPE_IDS[dto.sport] ?? 1;
+    const first = dto.geoPoints[0]!;
+
+    return this.request(COURSE_ENDPOINT, {
+      method: 'POST',
+      body: {
+        courseName: dto.name,
+        activityTypePk,
+        rulePK: privacyRuleId,
+        sourceTypeId: 3,
+        startPoint: { latitude: first.latitude, longitude: first.longitude },
+        geoPoints: dto.geoPoints.map((p) => ({
+          latitude: p.latitude,
+          longitude: p.longitude,
+          distance: p.distance,
+          elevation: p.elevation ?? 0,
+        })),
+      },
+    });
+  }
+
+  async deleteCourse(courseId: number): Promise<unknown> {
+    return this.request(`${COURSE_ENDPOINT}/${courseId}`, { method: 'DELETE' });
   }
 }

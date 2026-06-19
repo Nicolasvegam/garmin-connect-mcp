@@ -91,3 +91,39 @@ export const gearActivitySchema = z.object({
   gearUuid: z.string().uuid().describe('The UUID of the gear item'),
   activityId: z.number().positive().describe('The Garmin activity ID'),
 });
+
+// ── Course management ─────────────────────────────────────────────────────────
+
+const courseGeoPointSchema = z.object({
+  latitude: z.number().min(-90).max(90).describe('Latitude in decimal degrees'),
+  longitude: z.number().min(-180).max(180).describe('Longitude in decimal degrees'),
+  distance: z.number().min(0).describe('Cumulative distance from start in meters'),
+  elevation: z.number().optional().describe('Elevation in meters above sea level'),
+});
+
+export const createCourseSchema = z.object({
+  name: z.string().describe('Course name (e.g. "Waalwijk Morning Run ~15km")'),
+  sport: z
+    .enum(['running', 'cycling', 'swimming', 'hiking'])
+    .default('running')
+    .describe('Sport type. Defaults to running'),
+  privacy: z
+    .enum(['public', 'private'])
+    .default('private')
+    .describe('Visibility. Defaults to private'),
+  geoPoints: z
+    .array(courseGeoPointSchema)
+    .min(2)
+    .describe(
+      'Ordered list of GPS points forming the course. Each point needs cumulative distance from start. ' +
+        'Tip: compute cumulative distance using the Haversine formula between consecutive points.',
+    ),
+});
+
+export type CreateCourseDto = z.infer<typeof createCourseSchema>;
+
+export const deleteCourseSchema = z.object({
+  courseId: z.number().positive().describe('The Garmin course ID to delete'),
+});
+
+export type DeleteCourseDto = z.infer<typeof deleteCourseSchema>;
