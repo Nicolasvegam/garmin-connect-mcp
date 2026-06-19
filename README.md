@@ -2,7 +2,7 @@
 
 MCP server for Garmin Connect. Access your fitness, health, and training data from Claude Code, Claude Desktop, Cursor, Windsurf, or any MCP client.
 
-**61 tools** across 7 categories: activities, daily health, trends, sleep, body composition, performance/training, and profile/devices.
+**64 tools** across 8 categories: activities, daily health, trends, sleep, body composition, performance/training, profile/devices, and courses.
 
 API endpoints and authentication flow based on [`python-garminconnect`](https://github.com/cyberjunky/python-garminconnect) by [cyberjunky](https://github.com/cyberjunky).
 
@@ -176,6 +176,29 @@ The server communicates over stdio using the [Model Context Protocol](https://mo
 | `get_earned_badges` | Earned badges and achievements |
 | `get_workouts` | Saved workouts |
 | `get_workout` | Specific workout by ID |
+
+### Courses (3 tools)
+| Tool | Description |
+|------|-------------|
+| `get_courses` | List saved GPS courses |
+| `create_course` | Create a GPS course from an ordered list of geo points |
+| `delete_course` | Delete a saved course |
+
+#### `create_course` example
+
+```json
+{
+  "name": "Morning Run ~15km",
+  "sport": "running",
+  "privacy": "private",
+  "geoPoints": [
+    { "latitude": 51.74253, "longitude": 5.08677, "distance": 0, "elevation": 7 },
+    { "latitude": 51.75100, "longitude": 5.09200, "distance": 842.3, "elevation": 7 }
+  ]
+}
+```
+
+Each `geoPoint` requires `latitude`, `longitude`, and `distance` (cumulative metres from start). `elevation` is optional. Once created, send the course to your watch via the Garmin Connect app.
 
 ## Authentication
 
