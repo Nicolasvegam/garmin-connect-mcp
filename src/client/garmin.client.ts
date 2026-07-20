@@ -865,7 +865,7 @@ export class GarminClient {
   }
 
   async scheduleWorkout(workoutId: string, date: string): Promise<unknown> {
-    return this.request(`${WORKOUT_ENDPOINT}/${workoutId}/schedule/${date}`, { method: 'POST' });
+    return this.request(`${SCHEDULED_WORKOUT_ENDPOINT}/${workoutId}`, { method: 'POST', body: { date } });
   }
 
   async deleteWorkout(workoutId: string): Promise<unknown> {
