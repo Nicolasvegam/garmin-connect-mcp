@@ -750,4 +750,125 @@ export class GarminClient {
       { method: 'PUT' },
     );
   }
+
+  // Converts user-friendly DTO to Garmin API workout payload
+  private buildWorkoutPayload(dto: import('../dtos').CreateWorkoutDto): unknown {
+    const SPORT_TYPE_IDS: Record<string, number> = {
+      running: 1,
+      cycling: 2,
+      swimming: 5,
+      strength_training: 5007,
+    };
+
+    const STEP_TYPE_IDS: Record<string, { id: number; key: string }> = {
+      warmup:   { id: 1, key: 'warmup' },
+      cooldown: { id: 2, key: 'cooldown' },
+      interval: { id: 3, key: 'interval' },
+      recovery: { id: 4, key: 'recovery' },
+      rest:     { id: 5, key: 'rest' },
+      other:    { id: 7, key: 'other' },
+    };
+
+    const minPerKmToMs = (minPerKm: number): number => 1000 / (minPerKm * 60);
+
+    const buildTarget = (target: { type: string; minBpm?: number; maxBpm?: number; minPaceMinPerKm?: number; maxPaceMinPerKm?: number }) => {
+      if (target.type === 'heart_rate') {
+        return {
+          targetType: { workoutTargetTypeId: 4, workoutTargetTypeKey: 'heart.rate.zone' },
+          targetValueOne: target.maxBpm,
+          targetValueTwo: target.minBpm,
+        };
+      }
+      if (target.type === 'pace') {
+        return {
+          targetType: { workoutTargetTypeId: 6, workoutTargetTypeKey: 'pace.zone' },
+          // Garmin stores pace as speed (m/s): faster pace = higher m/s = targetValueOne
+          targetValueOne: minPerKmToMs(target.maxPaceMinPerKm!),
+          targetValueTwo: minPerKmToMs(target.minPaceMinPerKm!),
+        };
+      }
+      return {
+        targetType: { workoutTargetTypeId: 1, workoutTargetTypeKey: 'no.target' },
+        targetValueOne: null,
+        targetValueTwo: 0,
+      };
+    };
+
+    const buildEndCondition = (endCondition: { type: string; durationSeconds?: number; distanceMeters?: number }) => {
+      if (endCondition.type === 'distance') {
+        return {
+          endCondition: { conditionTypeId: 3, conditionTypeKey: 'distance', displayOrder: 3, displayable: true },
+          endConditionValue: endCondition.distanceMeters,
+        };
+      }
+      return {
+        endCondition: { conditionTypeId: 2, conditionTypeKey: 'time', displayOrder: 2, displayable: true },
+        endConditionValue: endCondition.durationSeconds,
+      };
+    };
+
+    let stepOrder = 1;
+
+    const buildExecutableStep = (step: { type: string; endCondition: any; target: any }): unknown => {
+      const { targetType, targetValueOne, targetValueTwo } = buildTarget(step.target);
+      const { endCondition, endConditionValue } = buildEndCondition(step.endCondition);
+      const stepType = STEP_TYPE_IDS[step.type] ?? STEP_TYPE_IDS['other']!;
+      return {
+        type: 'ExecutableStepDTO',
+        stepOrder: stepOrder++,
+        stepType: { stepTypeId: stepType.id, stepTypeKey: stepType.key },
+        endCondition,
+        endConditionValue,
+        targetType,
+        targetValueOne,
+        targetValueTwo,
+      };
+    };
+
+    const buildRepeatGroup = (group: { type: 'repeat'; iterations: number; steps: any[]; skipLastRestStep?: boolean }): unknown => {
+      const groupStepOrder = stepOrder++;
+      const innerSteps = group.steps.map(buildExecutableStep);
+      return {
+        type: 'RepeatGroupDTO',
+        stepOrder: groupStepOrder,
+        stepType: { stepTypeId: 6, stepTypeKey: 'repeat' },
+        numberOfIterations: group.iterations,
+        endCondition: { conditionTypeId: 7, conditionTypeKey: 'iterations', displayOrder: 7, displayable: false },
+        endConditionValue: group.iterations,
+        skipLastRestStep: group.skipLastRestStep ?? false,
+        workoutSteps: innerSteps,
+      };
+    };
+
+    const sportTypeId = SPORT_TYPE_IDS[dto.sport] ?? 1;
+    const workoutSteps = dto.steps.map((step: any) =>
+      step.type === 'repeat' ? buildRepeatGroup(step) : buildExecutableStep(step),
+    );
+
+    return {
+      sportType: { sportTypeId, sportTypeKey: dto.sport },
+      subSportType: 'GENERIC',
+      workoutName: dto.name,
+      workoutSegments: [
+        {
+          segmentOrder: 1,
+          sportType: { sportTypeId, sportTypeKey: dto.sport },
+          workoutSteps,
+        },
+      ],
+    };
+  }
+
+  async createWorkout(dto: import('../dtos').CreateWorkoutDto): Promise<unknown> {
+    const payload = this.buildWorkoutPayload(dto);
+    return this.request(WORKOUT_ENDPOINT, { method: 'POST', body: payload });
+  }
+
+  async scheduleWorkout(workoutId: string, date: string): Promise<unknown> {
+    return this.request(`${SCHEDULED_WORKOUT_ENDPOINT}/${workoutId}`, { method: 'POST', body: { date } });
+  }
+
+  async deleteWorkout(workoutId: string): Promise<unknown> {
+    return this.request(`${WORKOUT_ENDPOINT}/${workoutId}`, { method: 'DELETE' });
+  }
 }

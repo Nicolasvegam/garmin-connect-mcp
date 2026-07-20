@@ -91,3 +91,81 @@ export const gearActivitySchema = z.object({
   gearUuid: z.string().uuid().describe('The UUID of the gear item'),
   activityId: z.number().positive().describe('The Garmin activity ID'),
 });
+
+// ── Workout creation ──────────────────────────────────────────────────────
+
+const workoutTargetSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('no_target') }),
+  z.object({
+    type: z.literal('heart_rate'),
+    minBpm: z.number().int().min(60).max(250).describe('Minimum heart rate in BPM'),
+    maxBpm: z.number().int().min(60).max(250).describe('Maximum heart rate in BPM'),
+  }),
+  z.object({
+    type: z.literal('pace'),
+    minPaceMinPerKm: z
+      .number()
+      .positive()
+      .describe('Slowest acceptable pace in min/km (e.g. 5.5 for 5:30/km)'),
+    maxPaceMinPerKm: z
+      .number()
+      .positive()
+      .describe('Fastest acceptable pace in min/km (e.g. 4.5 for 4:30/km)'),
+  }),
+]);
+
+const timeEndConditionSchema = z.object({
+  type: z.literal('time'),
+  durationSeconds: z.number().positive().describe('Duration in seconds (e.g. 300 for 5 min)'),
+});
+const distanceEndConditionSchema = z.object({
+  type: z.literal('distance'),
+  distanceMeters: z.number().positive().describe('Distance in meters (e.g. 1000 for 1 km)'),
+});
+const workoutEndConditionSchema = z.discriminatedUnion('type', [
+  timeEndConditionSchema,
+  distanceEndConditionSchema,
+]);
+
+const executableStepSchema = z.object({
+  type: z.enum(['warmup', 'cooldown', 'interval', 'recovery', 'rest', 'other']),
+  endCondition: workoutEndConditionSchema,
+  target: workoutTargetSchema,
+});
+
+const repeatGroupSchema = z.object({
+  type: z.literal('repeat'),
+  iterations: z.number().int().positive().describe('Number of repetitions'),
+  steps: z.array(executableStepSchema).min(1).describe('Steps to repeat'),
+  skipLastRestStep: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe('Omit the final recovery step on the last rep'),
+});
+
+const workoutStepSchema = z.union([executableStepSchema, repeatGroupSchema]);
+
+export const createWorkoutSchema = z.object({
+  name: z.string().describe('Workout name (e.g. "5 x 5 min @ 4:25")'),
+  sport: z
+    .enum(['running', 'cycling', 'swimming', 'strength_training'])
+    .default('running')
+    .describe('Sport type. Defaults to running'),
+  steps: z.array(workoutStepSchema).min(1).describe('Ordered list of steps and repeat groups'),
+});
+
+export type CreateWorkoutDto = z.infer<typeof createWorkoutSchema>;
+
+export const scheduleWorkoutSchema = z.object({
+  workoutId: z.string().describe('The Garmin workout ID to schedule'),
+  date: dateString.describe('Date to schedule the workout on (YYYY-MM-DD)'),
+});
+
+export type ScheduleWorkoutDto = z.infer<typeof scheduleWorkoutSchema>;
+
+export const deleteWorkoutSchema = z.object({
+  workoutId: z.string().describe('The Garmin workout ID to delete'),
+});
+
+export type DeleteWorkoutDto = z.infer<typeof deleteWorkoutSchema>;
