@@ -1,14 +1,14 @@
 import crypto from 'node:crypto';
-import { NextResponse } from 'next/server';
+import { Hono } from 'hono';
 import { normalizeWebhook } from '@kapso/whatsapp-cloud-api/server';
-import { enqueue, isDuplicate } from '../../../../agent/queue';
-import { runAgentTurn } from '../../../../agent/runtime';
-import { sendWhatsAppText } from '../../../../lib/kapso';
-import { getKapsoConfig, readConfig } from '../../../../lib/store';
+import { enqueue, isDuplicate } from '../agent/queue';
+import { runAgentTurn } from '../agent/runtime';
+import { sendWhatsAppText } from '../lib/kapso';
+import { getKapsoConfig, readConfig } from '../lib/store';
 
-export const dynamic = 'force-dynamic';
+export const webhookRoutes = new Hono();
 
-function isValidSignature(rawBody: string, header: string | null, secret: string): boolean {
+function isValidSignature(rawBody: string, header: string | undefined, secret: string): boolean {
   if (!header) return false;
   const received = header.replace(/^sha256=/, '').trim();
   const expected = crypto.createHmac('sha256', secret).update(rawBody, 'utf-8').digest('hex');
@@ -19,23 +19,21 @@ function isValidSignature(rawBody: string, header: string | null, secret: string
   }
 }
 
-export async function GET(request: Request): Promise<Response> {
-  const url = new URL(request.url);
-  const challenge = url.searchParams.get('hub.challenge');
-  if (challenge) return new Response(challenge, { status: 200 });
-  return NextResponse.json({ ok: true });
-}
+webhookRoutes.get('/kapso', (c) => {
+  const challenge = c.req.query('hub.challenge');
+  if (challenge) return c.text(challenge);
+  return c.json({ ok: true });
+});
 
-export async function POST(request: Request): Promise<Response> {
-  const rawBody = await request.text();
+webhookRoutes.post('/kapso', async (c) => {
+  const rawBody = await c.req.text();
   const kapso = getKapsoConfig();
 
   if (kapso?.webhookSecret) {
-    const header =
-      request.headers.get('x-webhook-signature') ?? request.headers.get('x-hub-signature-256');
+    const header = c.req.header('x-webhook-signature') ?? c.req.header('x-hub-signature-256');
     if (!isValidSignature(rawBody, header, kapso.webhookSecret)) {
       console.error('Webhook rejected: invalid signature');
-      return NextResponse.json({ error: 'invalid signature' }, { status: 401 });
+      return c.json({ error: 'invalid signature' }, 401);
     }
   } else {
     console.error('Warning: webhook received without a configured secret, skipping verification');
@@ -45,7 +43,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     payload = JSON.parse(rawBody);
   } catch {
-    return NextResponse.json({ error: 'invalid json' }, { status: 400 });
+    return c.json({ error: 'invalid json' }, 400);
   }
 
   const normalized = normalizeWebhook(payload);
@@ -81,5 +79,5 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
-  return NextResponse.json({ received: true });
-}
+  return c.json({ received: true });
+});

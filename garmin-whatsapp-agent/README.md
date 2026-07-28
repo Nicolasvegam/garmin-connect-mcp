@@ -3,9 +3,11 @@
 Tu asistente personal de Garmin Connect por WhatsApp, potenciado por tu suscripcion de Claude (Pro/Max). Todo en una sola app: wizard de configuracion web, agente con las 97 herramientas de Garmin, y canal WhatsApp via [Kapso](https://kapso.ai).
 
 ```
-WhatsApp ──▶ Kapso (webhook) ──▶ Next.js ──▶ Claude Agent SDK ──▶ Garmin Connect
-                 ◀───────────── respuesta ◀──────────────────────┘
+WhatsApp ──▶ Kapso (webhook) ──▶ Hono ──▶ Claude Agent SDK ──▶ Garmin Connect
+                 ◀───────────── respuesta ◀───────────────────┘
 ```
+
+Stack: [Hono](https://hono.dev) sobre Node 20 (arranque instantaneo, cero overhead), wizard estatico sin build de frontend, `tsx` para dev y `tsup` para build. Ver `CLAUDE.md`/`AGENTS.md` para trabajar en el repo con agentes.
 
 ## Como funciona
 

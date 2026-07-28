@@ -3,16 +3,16 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+RUN npm run build && npm prune --omit=dev
 
 FROM node:20-slim
 WORKDIR /app
 ENV NODE_ENV=production
 ENV DATA_DIR=/data
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/node_modules/@anthropic-ai/claude-agent-sdk ./node_modules/@anthropic-ai/claude-agent-sdk
-COPY --from=builder /app/node_modules/@anthropic-ai/sdk ./node_modules/@anthropic-ai/sdk
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./
 VOLUME /data
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["node", "dist/server.js"]

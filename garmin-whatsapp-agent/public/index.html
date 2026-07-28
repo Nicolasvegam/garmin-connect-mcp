@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Garmin WhatsApp Agent</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Garmin WhatsApp Agent</h1>
+    <p class="subtitle">
+      Conecta tu suscripcion de Claude, tu cuenta de Garmin y tu numero de WhatsApp (Kapso). Tres
+      pasos y listo.
+    </p>
+
+    <section class="step" id="step-claude">
+      <div class="step-header">
+        <span class="step-number" data-num="1">1</span>
+        <span class="step-title">Suscripcion de Claude</span>
+        <span class="step-status">Pendiente</span>
+      </div>
+      <div class="step-body">
+        <p class="hint">
+          En tu computador (requiere plan Pro o Max), instala Claude Code y genera un token de
+          larga duracion:
+        </p>
+        <pre class="command">npm install -g @anthropic-ai/claude-code
+claude setup-token</pre>
+        <p class="hint">Pega aqui el token generado (empieza con <code>sk-ant-oat</code>):</p>
+        <input type="password" id="claude-token" placeholder="sk-ant-oat01-…" />
+        <div class="row">
+          <button id="claude-save">Guardar token</button>
+          <button id="claude-test" class="secondary" hidden>Probar conexion</button>
+        </div>
+        <p class="message" id="claude-msg" hidden></p>
+      </div>
+    </section>
+
+    <section class="step" id="step-garmin">
+      <div class="step-header">
+        <span class="step-number" data-num="2">2</span>
+        <span class="step-title">Cuenta de Garmin</span>
+        <span class="step-status">Pendiente</span>
+      </div>
+      <div class="step-body">
+        <p class="hint">
+          Tus credenciales se usan una sola vez para obtener tokens OAuth de Garmin (duran ~1 año).
+          El password no se almacena.
+        </p>
+        <input type="email" id="garmin-email" placeholder="Email de Garmin Connect" />
+        <input type="password" id="garmin-password" placeholder="Password" />
+        <button id="garmin-connect">Conectar Garmin</button>
+        <div id="garmin-mfa" hidden>
+          <p class="hint">Garmin pide un codigo de verificacion (revisa tu email):</p>
+          <input id="garmin-mfa-code" placeholder="Codigo MFA" />
+          <button id="garmin-mfa-send">Enviar codigo</button>
+        </div>
+        <p class="message" id="garmin-msg" hidden></p>
+      </div>
+    </section>
+
+    <section class="step" id="step-kapso">
+      <div class="step-header">
+        <span class="step-number" data-num="3">3</span>
+        <span class="step-title">WhatsApp via Kapso</span>
+        <span class="step-status">Pendiente</span>
+      </div>
+      <div class="step-body">
+        <p class="hint">
+          Crea una cuenta en <code>kapso.ai</code>, conecta un numero de WhatsApp y copia la API
+          key del proyecto.
+        </p>
+        <input type="password" id="kapso-key" placeholder="Kapso API key" />
+        <div class="row">
+          <button id="kapso-list" class="secondary">Buscar mis numeros</button>
+        </div>
+        <div class="row" id="kapso-numbers"></div>
+        <input id="kapso-phone-id" placeholder="Phone Number ID" />
+        <input id="kapso-url" placeholder="URL publica de esta app (ej: https://miapp.fly.dev)" />
+        <input type="password" id="kapso-secret" placeholder="Webhook secret (opcional si usas el boton de webhook)" />
+        <input id="kapso-allowed" placeholder="Numeros permitidos, separados por coma (ej: +56912345678)" />
+        <p class="hint">
+          Recomendado: limita los numeros permitidos para que solo tu puedas usar el bot (cada
+          mensaje consume tu suscripcion de Claude).
+        </p>
+        <div class="row">
+          <button id="kapso-webhook">Guardar y crear webhook</button>
+          <button id="kapso-save" class="secondary">Solo guardar</button>
+        </div>
+        <p class="message" id="kapso-msg" hidden></p>
+      </div>
+    </section>
+
+    <section class="step ready" id="step-ready" hidden>
+      <h2>✅ Todo listo</h2>
+      <p class="hint">Escribele por WhatsApp a tu numero conectado:</p>
+      <p class="number" id="ready-number"></p>
+      <p class="hint">Prueba con: “¿como dormi anoche?” o “resumen de mi semana de entrenamiento”.</p>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

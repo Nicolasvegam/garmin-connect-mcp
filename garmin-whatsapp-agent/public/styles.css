@@ -199,3 +199,13 @@ button.secondary {
   color: var(--accent);
   margin: 10px 0;
 }
+
+#garmin-mfa {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+[hidden] {
+  display: none !important;
+}
