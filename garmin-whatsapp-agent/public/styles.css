@@ -209,3 +209,39 @@ button.secondary {
 [hidden] {
   display: none !important;
 }
+
+#chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#chat-log:empty {
+  display: none;
+}
+
+.bubble {
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 90%;
+  white-space: pre-wrap;
+}
+
+.bubble.user {
+  background: var(--accent-dark);
+  color: var(--text);
+  align-self: flex-end;
+}
+
+.bubble.agent {
+  background: #0a0f1c;
+  border: 1px solid var(--border);
+  align-self: flex-start;
+}
+
+.bubble.pending {
+  color: var(--muted);
+  font-style: italic;
+}

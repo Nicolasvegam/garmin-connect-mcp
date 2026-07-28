@@ -55,10 +55,47 @@ async function refresh() {
   if (k.publicUrl) $('kapso-url').value ||= k.publicUrl;
   if (status.allowedNumbers.length) $('kapso-allowed').value ||= status.allowedNumbers.join(', ');
 
+  $('step-chat').hidden = !(status.claude && g.connected);
+
   const allReady = status.claude && g.connected && kapsoDone;
   $('step-ready').hidden = !allReady;
   if (allReady) $('ready-number').textContent = k.displayPhoneNumber ?? k.phoneNumberId;
 }
+
+function addBubble(kind, text) {
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${kind}`;
+  bubble.textContent = text;
+  $('chat-log').appendChild(bubble);
+  bubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  return bubble;
+}
+
+async function sendChat() {
+  const input = $('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  addBubble('user', text);
+  const pending = addBubble('agent pending', 'Pensando…');
+  $('chat-send').disabled = true;
+  try {
+    const { ok, data } = await post('/api/chat', { text });
+    pending.className = 'bubble agent';
+    pending.textContent = ok ? data.reply : `Error: ${data.error}`;
+  } catch (error) {
+    pending.className = 'bubble agent';
+    pending.textContent = `Error: ${error}`;
+  } finally {
+    $('chat-send').disabled = false;
+    pending.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }
+}
+
+$('chat-send').addEventListener('click', sendChat);
+$('chat-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendChat();
+});
 
 function stopGarminPoll() {
   clearInterval(garminPoll);
