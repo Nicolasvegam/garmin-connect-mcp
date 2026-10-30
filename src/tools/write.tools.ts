@@ -8,6 +8,9 @@ import {
   setHydrationSchema,
   setBloodPressureSchema,
   gearActivitySchema,
+  createWorkoutSchema,
+  scheduleWorkoutSchema,
+  deleteWorkoutSchema,
 } from '../dtos';
 
 export function registerWriteTools(server: McpServer, client: GarminClient): void {
@@ -126,6 +129,50 @@ export function registerWriteTools(server: McpServer, client: GarminClient): voi
       const data = await client.removeGearFromActivity(gearUuid, activityId);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(data ?? 'Gear unlinked', null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'create_workout',
+    {
+      description:
+        'Create a structured workout in Garmin Connect with steps, targets, and repeat groups. ' +
+        'Supports pace and heart-rate targets. Use schedule_workout to add it to your calendar.',
+      inputSchema: createWorkoutSchema.shape,
+    },
+    async (input) => {
+      const data = await client.createWorkout(input as any);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'schedule_workout',
+    {
+      description: 'Schedule a saved workout on a specific calendar date',
+      inputSchema: scheduleWorkoutSchema.shape,
+    },
+    async ({ workoutId, date }) => {
+      const data = await client.scheduleWorkout(workoutId, date);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(data ?? 'Workout scheduled', null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'delete_workout',
+    {
+      description: 'Delete a saved workout from Garmin Connect. This cannot be undone.',
+      inputSchema: deleteWorkoutSchema.shape,
+    },
+    async ({ workoutId }) => {
+      const data = await client.deleteWorkout(workoutId);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(data ?? 'Workout deleted', null, 2) }],
       };
     },
   );
