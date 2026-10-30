@@ -1,6 +1,6 @@
 {
   "name": "@nicolasvegam/garmin-connect-mcp",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "MCP server for Garmin Connect - access fitness, health and training data",
   "type": "module",
   "bin": {
@@ -15,9 +15,10 @@
     "dev": "tsup --watch",
     "start": "node build/index.js",
     "setup": "node build/setup.js",
-    "prepublishOnly": "tsup",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "tsup"
   },
   "keywords": [
     "garmin",

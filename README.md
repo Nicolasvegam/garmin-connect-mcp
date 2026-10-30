@@ -189,9 +189,15 @@ If your Garmin account has MFA enabled (required for devices with ECG capabiliti
 GARMIN_EMAIL='you@email.com' GARMIN_PASSWORD='yourpass' npx -y @nicolasvegam/garmin-connect-mcp setup
 ```
 
+The same flow is available as its own executable, `garmin-connect-mcp-setup`:
+
+```bash
+GARMIN_EMAIL='you@email.com' GARMIN_PASSWORD='yourpass' npx -y --package @nicolasvegam/garmin-connect-mcp garmin-connect-mcp-setup
+```
+
 This will:
 1. Log in to Garmin Connect
-2. Prompt you for the MFA code sent to your email or authenticator app
+2. Prompt you for the MFA code sent to your email or authenticator app (the setup command asks for the code on the terminal; the MCP server itself cannot)
 3. Save OAuth tokens to `~/.garmin-mcp/`
 
 After setup, the MCP server will use the saved tokens automatically — no MFA prompt needed until the tokens expire. When they do, simply run the setup command again.
@@ -203,6 +209,7 @@ git clone https://github.com/Nicolasvegam/garmin-connect-mcp.git
 cd garmin-connect-mcp
 npm install
 npm run build
+npm test
 ```
 
 To test locally:
