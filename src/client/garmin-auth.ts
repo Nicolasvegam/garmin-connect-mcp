@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { parseSsoPage, readSsoLogin, type MfaChallenge } from './sso-page';
 
 const OAUTH_CONSUMER_URL = 'https://thegarth.s3.amazonaws.com/oauth_consumer.json';
 const SSO_EMBED = 'https://sso.garmin.com/sso/embed';
@@ -23,10 +24,8 @@ const SSO_WIDGET_ID = 'gauth-widget';
 const USER_AGENT_MOBILE = 'com.garmin.android.apps.connectmobile';
 const USER_AGENT_BROWSER = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
-const CSRF_REGEX = /name="_csrf"\s+value="(.+?)"/;
-const TICKET_REGEX = /ticket=([^"]+)"/;
-const TITLE_REGEX = /<title>(.+?)<\/title>/;
 const SSO_VERIFY_MFA = 'https://sso.garmin.com/sso/verifyMFA/loginEnterMfaCode';
+const SSO_REQUEST_MFA_CODE = 'https://sso.garmin.com/sso/verifyMFA/mfaCode';
 
 const TOKEN_DIR = path.join(os.homedir(), '.garmin-mcp');
 const OAUTH1_TOKEN_FILE = 'oauth1_token.json';
@@ -256,9 +255,8 @@ export class GarminAuth {
       headers: { 'User-Agent': USER_AGENT_BROWSER },
     });
 
-    const csrfMatch = CSRF_REGEX.exec(signinResponse.data);
-    if (!csrfMatch) throw new Error('Failed to extract CSRF token from SSO');
-    const csrfToken = csrfMatch[1];
+    const csrfToken = parseSsoPage(String(signinResponse.data)).csrfToken;
+    if (!csrfToken) throw new Error('Failed to extract CSRF token from SSO');
 
     const loginResponse = await ssoClient.post(SSO_SIGNIN, new URLSearchParams({
       username: this.email,
@@ -283,27 +281,29 @@ export class GarminAuth {
       },
     });
 
-    let responseHtml: string = loginResponse.data;
+    const decision = readSsoLogin(String(loginResponse.data));
 
-    const titleMatch = TITLE_REGEX.exec(responseHtml);
-    const title = titleMatch?.[1] ?? '';
-
-    if (title.includes('MFA')) {
+    if (decision.kind === 'mfa' || decision.kind === 'missing-csrf') {
       if (!this.promptMfa) {
         throw new Error(
           'MFA is required but no MFA handler is available. Run "npx @nicolasvegam/garmin-connect-mcp setup" to authenticate interactively.',
         );
       }
 
-      const mfaCsrfMatch = CSRF_REGEX.exec(responseHtml);
-      if (!mfaCsrfMatch) throw new Error('Failed to extract CSRF token for MFA');
+      if (decision.kind === 'missing-csrf') {
+        throw new Error('Failed to extract CSRF token for MFA');
+      }
+
+      if (decision.challenge.requestCode) {
+        await this.requestMfaCode(ssoClient, decision.challenge);
+      }
 
       const mfaCode = await this.promptMfa();
 
       const mfaResponse = await ssoClient.post(SSO_VERIFY_MFA, new URLSearchParams({
         'mfa-code': mfaCode,
         embed: 'true',
-        _csrf: mfaCsrfMatch[1]!,
+        _csrf: decision.challenge.csrfToken,
         fromPage: 'setupEnterMfaCode',
       }).toString(), {
         params: {
@@ -323,13 +323,62 @@ export class GarminAuth {
         },
       });
 
-      responseHtml = mfaResponse.data;
+      const verified = readSsoLogin(String(mfaResponse.data));
+      if (verified.kind !== 'ticket') {
+        throw new Error('Login failed: invalid credentials or MFA verification failed');
+      }
+      return verified.ticket;
     }
 
-    const ticketMatch = TICKET_REGEX.exec(responseHtml);
-    if (!ticketMatch) throw new Error('Login failed: invalid credentials or MFA verification failed');
+    if (decision.kind !== 'ticket') {
+      throw new Error('Login failed: invalid credentials or MFA verification failed');
+    }
 
-    return ticketMatch[1]!;
+    return decision.ticket;
+  }
+
+  private async requestMfaCode(
+    ssoClient: {
+      post: (
+        url: string,
+        data: unknown,
+        config: {
+          params: { clientId: string };
+          headers: Record<string, string>;
+          validateStatus: () => boolean;
+        },
+      ) => Promise<{ status: number }>;
+    },
+    challenge: MfaChallenge,
+  ): Promise<void> {
+    console.error('Requesting MFA code from Garmin...');
+
+    const response = await ssoClient.post(
+      SSO_REQUEST_MFA_CODE,
+      {
+        customerGuid: challenge.customerGuid,
+        mfaMethod: challenge.mfaMethod,
+        locale: challenge.locale,
+      },
+      {
+        params: { clientId: challenge.clientId },
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json, text/plain, */*',
+          'User-Agent': USER_AGENT_BROWSER,
+          Origin: SSO_ORIGIN,
+          Referer: SSO_SIGNIN,
+        },
+        validateStatus: () => true,
+      },
+    );
+
+    if (response.status === 429) {
+      throw new Error('Garmin rate-limited the MFA code request (429). Wait and run setup again.');
+    }
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(`Garmin MFA code request failed with status ${response.status}`);
+    }
   }
 
   private async exchangeTicketForOAuth1(ticket: string): Promise<void> {

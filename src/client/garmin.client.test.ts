@@ -4,8 +4,9 @@ import { GarminClient } from './garmin.client';
 
 dotenv.config();
 
-const email = process.env.GARMIN_EMAIL!;
-const password = process.env.GARMIN_PASSWORD!;
+const email = process.env.GARMIN_EMAIL;
+const password = process.env.GARMIN_PASSWORD;
+const hasLiveCredentials = Boolean(email && password);
 
 const DELAY_MS = 500;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -32,13 +33,13 @@ function monthAgo(): string {
   return now.toISOString().split('T')[0]!;
 }
 
-describe('GarminClient (live API)', () => {
+describe.skipIf(!hasLiveCredentials)('GarminClient (live API)', () => {
   let client: GarminClient;
 
   beforeAll(() => {
     expect(email).toBeTruthy();
     expect(password).toBeTruthy();
-    client = new GarminClient(email, password);
+    client = new GarminClient(email!, password!);
   });
 
   afterEach(() => sleep(DELAY_MS));
@@ -612,25 +613,30 @@ describe('GarminClient (live API)', () => {
     }, 30000);
   });
 
-  describe('Utility: dateRange', () => {
-    it('generates correct date array', () => {
-      const dates = client.dateRange('2024-01-01', '2024-01-05');
-      expect(dates).toEqual([
-        '2024-01-01',
-        '2024-01-02',
-        '2024-01-03',
-        '2024-01-04',
-        '2024-01-05',
-      ]);
-    });
+});
 
-    it('single day range returns one date', () => {
-      const dates = client.dateRange('2024-03-15', '2024-03-15');
-      expect(dates).toEqual(['2024-03-15']);
-    });
+describe('GarminClient dateRange', () => {
+  const client = new GarminClient('ci@example.com', 'unused');
 
-    it('empty range when start > end throws error', () => {
-      expect(() => client.dateRange('2024-01-05', '2024-01-01')).toThrow('startDate 2024-01-05 must not be after endDate 2024-01-01');
-    });
+  it('generates correct date array', () => {
+    const dates = client.dateRange('2024-01-01', '2024-01-05');
+    expect(dates).toEqual([
+      '2024-01-01',
+      '2024-01-02',
+      '2024-01-03',
+      '2024-01-04',
+      '2024-01-05',
+    ]);
+  });
+
+  it('single day range returns one date', () => {
+    const dates = client.dateRange('2024-03-15', '2024-03-15');
+    expect(dates).toEqual(['2024-03-15']);
+  });
+
+  it('empty range when start > end throws error', () => {
+    expect(() => client.dateRange('2024-01-05', '2024-01-01')).toThrow(
+      'startDate 2024-01-05 must not be after endDate 2024-01-01',
+    );
   });
 });
