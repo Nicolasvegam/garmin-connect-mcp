@@ -180,7 +180,7 @@ describe('GarminClient (live API)', () => {
     }, 30000);
 
     it('get_steps', async () => {
-      const data = await client.getSteps(yesterday());
+      const data = await client.getStepsChart(yesterday());
       expect(data).toBeDefined();
     }, 30000);
 
@@ -307,7 +307,7 @@ describe('GarminClient (live API)', () => {
     }, 30000);
 
     it('get_latest_weight', async () => {
-      const data = await client.getLatestWeight();
+      const data = await client.getDailyWeighIns(yesterday());
       expect(data).toBeDefined();
     }, 30000);
 
@@ -629,9 +629,8 @@ describe('GarminClient (live API)', () => {
       expect(dates).toEqual(['2024-03-15']);
     });
 
-    it('empty range when start > end', () => {
-      const dates = client.dateRange('2024-01-05', '2024-01-01');
-      expect(dates).toEqual([]);
+    it('empty range when start > end throws error', () => {
+      expect(() => client.dateRange('2024-01-05', '2024-01-01')).toThrow('startDate 2024-01-05 must not be after endDate 2024-01-01');
     });
   });
 });

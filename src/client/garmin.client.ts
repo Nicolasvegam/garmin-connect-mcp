@@ -163,12 +163,17 @@ export class GarminClient {
     startDate: string,
     endDate: string,
     fetcher: (date: string) => Promise<unknown>,
-  ): Promise<{ date: string; data: unknown }[]> {
+  ): Promise<{ date: string; data: unknown; error?: string }[]> {
     const dates = this.dateRange(startDate, endDate);
-    const results: { date: string; data: unknown }[] = [];
+    const results: { date: string; data: unknown; error?: string }[] = [];
     for (const date of dates) {
-      const data = await fetcher(date).catch(() => null);
-      results.push({ date, data });
+      try {
+        const data = await fetcher(date);
+        results.push({ date, data });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        results.push({ date, data: null, error: message });
+      }
     }
     return results;
   }
