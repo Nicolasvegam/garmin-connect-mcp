@@ -107,3 +107,5 @@ export const UPLOAD_ENDPOINT = '/upload-service/upload';
 export const DAILY_STEPS_MAX_RANGE_DAYS = 28;
 export const BIOMETRIC_STATS_ENDPOINT = '/biometric-service/stats';
 export const DEFAULT_GEAR_ACTIVITIES_LIMIT = 20;
+export const COURSE_ENDPOINT = '/course-service/course';
+export const DEFAULT_COURSES_LIMIT = 20;
