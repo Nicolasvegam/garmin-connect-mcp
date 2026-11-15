@@ -8,6 +8,8 @@ import {
   setHydrationSchema,
   setBloodPressureSchema,
   gearActivitySchema,
+  createCourseSchema,
+  deleteCourseSchema,
 } from '../dtos';
 
 export function registerWriteTools(server: McpServer, client: GarminClient): void {
@@ -126,6 +128,50 @@ export function registerWriteTools(server: McpServer, client: GarminClient): voi
       const data = await client.removeGearFromActivity(gearUuid, activityId);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(data ?? 'Gear unlinked', null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'get_courses',
+    {
+      description: 'List saved courses from Garmin Connect',
+    },
+    async () => {
+      const data = await client.getCourses();
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'create_course',
+    {
+      description:
+        'Create a GPS course in Garmin Connect from an ordered list of geo points. ' +
+        'Each point needs latitude, longitude, and cumulative distance from start in meters. ' +
+        'Use schedule_workout or send the course to a device via the Garmin Connect app.',
+      inputSchema: createCourseSchema.shape,
+    },
+    async (input) => {
+      const data = await client.createCourse(input as import('../dtos').CreateCourseDto);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'delete_course',
+    {
+      description: 'Delete a saved course from Garmin Connect. This cannot be undone.',
+      inputSchema: deleteCourseSchema.shape,
+    },
+    async ({ courseId }) => {
+      const data = await client.deleteCourse(courseId);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(data ?? 'Course deleted', null, 2) }],
       };
     },
   );
