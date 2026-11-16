@@ -177,6 +177,68 @@ The server communicates over stdio using the [Model Context Protocol](https://mo
 | `get_workouts` | Saved workouts |
 | `get_workout` | Specific workout by ID |
 
+### Workouts (4 tools)
+These create, schedule and delete workouts in Garmin Connect.
+
+| Tool | Description |
+|------|-------------|
+| `create_workout` | Create a workout from timed or lap-button steps and repeat groups with HR or pace targets, optionally scheduled; returns the steps as stored |
+| `schedule_workout` | Schedule a saved workout on a date |
+| `delete_workout` | Delete a saved workout permanently |
+| `unschedule_workout` | Remove a scheduled workout from the calendar, keeping the workout |
+
+#### `create_workout` example
+
+```json
+{
+  "name": "Base + HM effort",
+  "sport": "running",
+  "date": "2026-10-13",
+  "steps": [
+    { "kind": "warmup", "durationSec": 900, "hr": [125, 149] },
+    { "kind": "interval", "durationSec": 1200, "pace": ["5:10", "5:39"] },
+    { "kind": "cooldown", "durationSec": 900, "hr": [125, 149] }
+  ]
+}
+```
+
+- `kind` is `warmup`, `interval`, `recovery` or `cooldown`.
+- A step ends after `durationSec` seconds, or with `"untilLapPress": true` when the lap button is
+  pressed (e.g. a warm-up that runs until the start line). It takes exactly one of the two.
+- `hr` is a bpm range and `pace` an `m:ss` per km range, either order. A step takes one or neither.
+- `sport` defaults to `running`. Garmin's workout sports are accepted: `running`, `cycling`, `other`,
+  `swimming`, `strength_training`, `cardio_training`, `yoga`, `pilates`, `hiit`, `mobility`, `rucking`.
+  Only time and lap-button steps are built, so rep-based strength steps are not supported yet.
+- With `date`, the workout is scheduled in the same call. The result carries `workoutId` and
+  `workoutScheduleId`. `unschedule_workout` takes the schedule ID, `delete_workout` the workout ID.
+
+#### Repeat groups
+
+An entry in `steps` can be a repeat group instead of a single step:
+
+```json
+{
+  "name": "Intervals 6x2:00",
+  "steps": [
+    { "kind": "warmup", "durationSec": 600 },
+    {
+      "repeat": 6,
+      "skipLastRecovery": true,
+      "steps": [
+        { "kind": "interval", "durationSec": 120, "pace": ["4:39", "5:05"] },
+        { "kind": "recovery", "durationSec": 120 }
+      ]
+    },
+    { "kind": "cooldown", "durationSec": 600 }
+  ]
+}
+```
+
+- `repeat` is the number of iterations, 1 to 99. Groups hold single steps only; they cannot be nested.
+- `skipLastRecovery` drops the recovery after the final iteration, e.g. when a cool-down follows. It
+  defaults to `false` and needs the group to end with a `recovery` step. Garmin's estimated duration
+  still counts the skipped recovery.
+
 ## Authentication
 
 Uses Garmin Connect credentials (email/password) via environment variables. OAuth tokens are cached in `~/.garmin-mcp/` to avoid re-authentication on each request.

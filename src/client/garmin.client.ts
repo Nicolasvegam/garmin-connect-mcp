@@ -94,9 +94,75 @@ import {
   DAILY_STEPS_MAX_RANGE_DAYS,
   BIOMETRIC_STATS_ENDPOINT,
 } from '../constants/garmin-endpoints';
+import {
+  EXECUTABLE_STEP_DTO,
+  REPEAT_GROUP_DTO,
+  WORKOUT_SPORT_TYPES,
+  WORKOUT_STEP_TYPES,
+  REPEAT_STEP_TYPE,
+  LAP_BUTTON_END_CONDITION,
+  TIME_END_CONDITION,
+  ITERATIONS_END_CONDITION,
+  NO_TARGET,
+  HEART_RATE_TARGET,
+  PACE_TARGET,
+  METERS_PER_KM,
+} from '../constants/workout-types';
+import type { CreateWorkoutDto, CreateWorkoutStepDto } from '../dtos';
+
+type WorkoutTargetPayload = {
+  targetType: { workoutTargetTypeId: number; workoutTargetTypeKey: string };
+  targetValueOne?: number;
+  targetValueTwo?: number;
+};
+
+type StoredWorkoutStep = {
+  stepOrder?: number;
+  stepType?: { stepTypeKey?: string } | null;
+  endCondition?: { conditionTypeKey?: string } | null;
+  endConditionValue?: number | null;
+  targetType?: { workoutTargetTypeKey?: string } | null;
+  targetValueOne?: number | null;
+  targetValueTwo?: number | null;
+  numberOfIterations?: number;
+  skipLastRestStep?: boolean | null;
+  workoutSteps?: StoredWorkoutStep[];
+};
+
+type StoredWorkout = {
+  workoutId?: number;
+  workoutName?: string;
+  description?: string | null;
+  workoutSegments?: { workoutSteps?: StoredWorkoutStep[] }[];
+};
+
+type WorkoutStepSummary = {
+  stepOrder?: number;
+  kind?: string;
+  endCondition?: string;
+  endConditionValue?: number | null;
+  target: string;
+  targetValueOne?: number | null;
+  targetValueTwo?: number | null;
+  bpm?: [number, number];
+  pace?: [string, string];
+  iterations?: number;
+  skipLastRecovery?: boolean;
+  steps?: WorkoutStepSummary[];
+};
 
 function todayString(): string {
   return new Date().toISOString().split('T')[0]!;
+}
+
+function paceToMetersPerSecond(pace: string): number {
+  const [minutes, seconds] = pace.split(':').map(Number);
+  return METERS_PER_KM / (minutes! * 60 + seconds!);
+}
+
+function metersPerSecondToPace(speed: number): string {
+  const totalSeconds = Math.round(METERS_PER_KM / speed);
+  return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
 }
 
 export class GarminClient {
@@ -754,5 +820,143 @@ export class GarminClient {
       `${GEAR_UNLINK_ENDPOINT}/${gearUuid}/activity/${activityId}`,
       { method: 'PUT' },
     );
+  }
+
+  private buildWorkoutTarget(step: CreateWorkoutStepDto): WorkoutTargetPayload {
+    if (step.hr && step.pace) {
+      throw new Error('A step takes hr or pace, not both');
+    }
+
+    if (step.hr) {
+      return {
+        targetType: { ...HEART_RATE_TARGET },
+        targetValueOne: Math.min(...step.hr),
+        targetValueTwo: Math.max(...step.hr),
+      };
+    }
+
+    if (step.pace) {
+      const speeds = step.pace.map(paceToMetersPerSecond);
+      return {
+        targetType: { ...PACE_TARGET },
+        targetValueOne: Math.max(...speeds),
+        targetValueTwo: Math.min(...speeds),
+      };
+    }
+
+    return { targetType: { ...NO_TARGET } };
+  }
+
+  private buildExecutableStep(step: CreateWorkoutStepDto, stepOrder: number, childStepId?: number): unknown {
+    return {
+      type: EXECUTABLE_STEP_DTO,
+      stepOrder,
+      ...(childStepId !== undefined && { childStepId }),
+      stepType: { ...WORKOUT_STEP_TYPES[step.kind] },
+      ...(step.untilLapPress
+        ? { endCondition: { ...LAP_BUTTON_END_CONDITION } }
+        : { endCondition: { ...TIME_END_CONDITION }, endConditionValue: step.durationSec }),
+      ...this.buildWorkoutTarget(step),
+    };
+  }
+
+  private buildWorkoutPayload(dto: CreateWorkoutDto): unknown {
+    const sportType = WORKOUT_SPORT_TYPES[dto.sport ?? 'running'];
+    let stepOrder = 0;
+    let childStepId = 0;
+    const workoutSteps = dto.steps.map((step) => {
+      if (!('repeat' in step)) {
+        return this.buildExecutableStep(step, ++stepOrder);
+      }
+
+      childStepId += 1;
+      const groupOrder = ++stepOrder;
+      const groupId = childStepId;
+      return {
+        type: REPEAT_GROUP_DTO,
+        stepOrder: groupOrder,
+        childStepId: groupId,
+        stepType: { ...REPEAT_STEP_TYPE },
+        numberOfIterations: step.repeat,
+        endCondition: { ...ITERATIONS_END_CONDITION },
+        endConditionValue: step.repeat,
+        smartRepeat: false,
+        skipLastRestStep: step.skipLastRecovery ?? false,
+        workoutSteps: step.steps.map((child) => this.buildExecutableStep(child, ++stepOrder, groupId)),
+      };
+    });
+
+    return {
+      workoutName: dto.name,
+      ...(dto.description !== undefined && { description: dto.description }),
+      sportType: { ...sportType },
+      workoutSegments: [{ segmentOrder: 1, sportType: { ...sportType }, workoutSteps }],
+    };
+  }
+
+  private summarizeWorkoutStep(step: StoredWorkoutStep): WorkoutStepSummary {
+    const summary: WorkoutStepSummary = {
+      stepOrder: step.stepOrder,
+      kind: step.stepType?.stepTypeKey,
+      endCondition: step.endCondition?.conditionTypeKey,
+      endConditionValue: step.endConditionValue,
+      target: step.targetType?.workoutTargetTypeKey ?? 'none',
+    };
+
+    if (step.workoutSteps) {
+      summary.iterations = step.numberOfIterations;
+      summary.skipLastRecovery = step.skipLastRestStep === true;
+      summary.steps = step.workoutSteps.map((child) => this.summarizeWorkoutStep(child));
+      return summary;
+    }
+
+    summary.targetValueOne = step.targetValueOne;
+    summary.targetValueTwo = step.targetValueTwo;
+
+    const hasValues = typeof step.targetValueOne === 'number' && typeof step.targetValueTwo === 'number';
+    if (hasValues && summary.target === HEART_RATE_TARGET.workoutTargetTypeKey) {
+      summary.bpm = [step.targetValueOne!, step.targetValueTwo!];
+    }
+    if (hasValues && summary.target === PACE_TARGET.workoutTargetTypeKey) {
+      summary.pace = [metersPerSecondToPace(step.targetValueOne!), metersPerSecondToPace(step.targetValueTwo!)];
+    }
+
+    return summary;
+  }
+
+  async createWorkout(dto: CreateWorkoutDto): Promise<StoredWorkout> {
+    return this.request(WORKOUT_ENDPOINT, {
+      method: 'POST',
+      body: this.buildWorkoutPayload(dto),
+    });
+  }
+
+  async getWorkoutStepSummary(workoutId: string): Promise<WorkoutStepSummary[]> {
+    const workout = await this.request<StoredWorkout>(`${WORKOUT_ENDPOINT}/${workoutId}`);
+    return (workout.workoutSegments ?? []).flatMap((segment) =>
+      (segment.workoutSteps ?? []).map((step) => this.summarizeWorkoutStep(step)),
+    );
+  }
+
+  async scheduleWorkout(
+    workoutId: string,
+    date: string,
+  ): Promise<{ workoutScheduleId?: number; workout?: { workoutName?: string } }> {
+    return this.request(`${SCHEDULED_WORKOUT_ENDPOINT}/${workoutId}`, {
+      method: 'POST',
+      body: { date },
+    });
+  }
+
+  async deleteWorkout(workoutId: string): Promise<unknown> {
+    return this.request(`${WORKOUT_ENDPOINT}/${workoutId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async unscheduleWorkout(scheduleId: string): Promise<unknown> {
+    return this.request(`${SCHEDULED_WORKOUT_ENDPOINT}/${scheduleId}`, {
+      method: 'DELETE',
+    });
   }
 }
