@@ -1,5 +1,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { GarminClient } from './client';
 import {
   registerActivityTools,
@@ -20,10 +23,16 @@ import {
 const GARMIN_EMAIL = process.env.GARMIN_EMAIL;
 const GARMIN_PASSWORD = process.env.GARMIN_PASSWORD;
 
-if (!GARMIN_EMAIL || !GARMIN_PASSWORD) {
+const TOKEN_DIR = path.join(os.homedir(), '.garmin-mcp');
+const hasCachedTokens =
+  fs.existsSync(path.join(TOKEN_DIR, 'oauth1_token.json')) &&
+  fs.existsSync(path.join(TOKEN_DIR, 'oauth2_token.json'));
+
+if ((!GARMIN_EMAIL || !GARMIN_PASSWORD) && !hasCachedTokens) {
   console.error(
-    'Error: GARMIN_EMAIL and GARMIN_PASSWORD environment variables are required.\n' +
-      'Set them when adding this MCP server:\n' +
+    'Error: no cached tokens found and GARMIN_EMAIL/GARMIN_PASSWORD env vars not set.\n' +
+      'Either run "npx @nicolasvegam/garmin-connect-mcp setup" to authenticate interactively,\n' +
+      'or set env vars when adding this MCP server:\n' +
       '  claude mcp add garmin -e GARMIN_EMAIL=you@email.com -e GARMIN_PASSWORD=yourpass -- npx -y @nicolasvegam/garmin-connect-mcp',
   );
   process.exit(1);

@@ -68,8 +68,8 @@ export type RequestOptions = {
 };
 
 export class GarminAuth {
-  private email: string;
-  private password: string;
+  private email: string | undefined;
+  private password: string | undefined;
   private consumer: OAuthConsumer | null = null;
   private oauth1Token: OAuth1Token | null = null;
   private oauth2Token: OAuth2Token | null = null;
@@ -85,7 +85,7 @@ export class GarminAuth {
     return this.profile?.profileId ?? 0;
   }
 
-  constructor(email: string, password: string, promptMfa?: () => Promise<string>) {
+  constructor(email?: string, password?: string, promptMfa?: () => Promise<string>) {
     this.email = email;
     this.password = password;
     this.promptMfa = promptMfa;
@@ -187,6 +187,13 @@ export class GarminAuth {
   }
 
   private async login(): Promise<void> {
+    if (!this.email || !this.password) {
+      throw new Error(
+        'No cached tokens available and GARMIN_EMAIL/GARMIN_PASSWORD env vars not set. ' +
+          'Run "npx @nicolasvegam/garmin-connect-mcp setup" to authenticate, or set credentials.',
+      );
+    }
+
     console.error('Authenticating with Garmin Connect...');
 
     await this.fetchOAuthConsumer();
